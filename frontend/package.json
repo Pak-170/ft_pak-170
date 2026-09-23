@@ -1,0 +1,31 @@
+{
+  "name": "repo_stats",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rsbuild build",
+    "dev": "rsbuild --open",
+    "check": "svelte-check",
+    "check-watch": "svelte-check --watch --color --preserveWatchOutput",
+    "format": "prettier --write .",
+    "preview": "rsbuild preview",
+    "lint": "prettier --check ."
+  },
+  "devDependencies": {
+    "@rsbuild/core": "2.2",
+    "@rsbuild/plugin-svelte": "^2.0.1",
+    "@types/three": "^0.185.4",
+    "prettier": "^3.0.1",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "svelte": "^5.55.7",
+    "three": "^0.185.1"
+  },
+  "allowScripts": {
+    "svelte-preprocess@6.0.5": true
+  }
+}
