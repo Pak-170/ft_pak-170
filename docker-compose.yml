@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: ./frontend/
+    volumes:
+      - ./frontend/:/app
+      - node-build-cache:/app/node_modules
+      - svelte-check-cache:/app/.svelte-check
+    init: true
+    ports:
+      - 3000:3000
+
+volumes:
+  node-build-cache:
+  svelte-check-cache:
