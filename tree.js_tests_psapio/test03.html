@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<title>Rectángulo con borde y responsive</title>
+	<style>
+		body { margin: 0; overflow: hidden; background: #111; }
+		canvas { display: block; }
+	</style>
+</head>
+<body>
+
+	<script type="importmap">
+		{
+		  "imports": {
+			"three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+		  }
+		}
+	</script>
+
+	<script type="module">
+		import * as THREE from 'three';
+
+		// 1. Escena, Cámara y Renderizador
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color(0x1a1a2e); // Fondo azul oscuro espacial (o pon el color que prefieras)
+		
+		// Cargar la foto y ponerla de fondo
+		const textureLoader = new THREE.TextureLoader();
+		scene.background = textureLoader.load('fonddo.jpg'); // Cambia esto por la ruta o nombre de tu foto
+		
+		// Usar una cámara ortográfica es ideal para juegos 2D porque evita la perspectiva y mantiene tamaños exactos
+		const aspect = window.innerWidth / window.innerHeight;
+		const viewSize = 10;
+
+		// Bajamos el FOV a 75 (más natural) y ampliamos el plano lejano a 1000
+		const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+			
+		// Acercamos la cámara (menos Z y menos Y)
+		camera.position.set(0, 2, 3); 
+			
+		// Asegurar que mire al centro
+		camera.lookAt(0, 0, 0);
+
+		const renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(renderer.domElement);
+
+		// 2. Crear el rectángulo base y su borde negro
+		const paddleGroup = new THREE.Group(); // Agrupamos ambos para moverlos juntos
+
+		const width = 1, height = 0.3, depth = 0.3;
+
+		// Relleno del rectángulo
+		const geometry = new THREE.BoxGeometry(width, height, depth);
+		const material = new THREE.MeshBasicMaterial({ color: 0x0055ff });
+		const paddleMesh = new THREE.Mesh(geometry, material);
+		paddleGroup.add(paddleMesh);
+
+		// Borde negro usando EdgesGeometry y LineSegments
+		const edges = new THREE.EdgesGeometry(geometry);
+		const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 });
+		const wireframe = new THREE.LineSegments(edges, lineMaterial);
+		// Lo adelantamos un pelín en Z para que no parpadee (z-fighting) con el fondo
+		wireframe.position.z = 0.01; 
+		paddleGroup.add(wireframe);
+
+		scene.add(paddleGroup);
+
+		// Posición inicial fija abajo
+		paddleGroup.position.y = -4;
+
+		
+		// 3. Control de teclas
+		const keys = { left: false, right: false };
+		const speed = 1;
+		
+		
+		// control raton
+		let targetX = 3;
+
+		window.addEventListener('mousemove', (event) => {
+		    // Normalizar la posición del ratón de -1 a 1
+		    const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+		
+		    // Calcular el ancho visible exacto teniendo en cuenta la profundidad Y de la paleta
+		    const vFOV = THREE.MathUtils.degToRad(camera.fov);
+		    const distanceToPaddle = Math.abs(camera.position.z - paddleGroup.position.z);
+		    const visibleHeight = 2 * Math.tan(vFOV / 2) * distanceToPaddle;
+		    const visibleWidth = visibleHeight * camera.aspect;
+		
+		    // Mapear directamente el ratón al ancho de extremo a extremo (con un factor de 1.1 o 1.2 si quieres que sobrepase un poco)
+		    targetX = mouseX * (visibleWidth / 2) * 1.4; 
+		});
+
+		window.addEventListener('resize', () =>
+		{
+		    camera.aspect = window.innerWidth / window.innerHeight;
+		    camera.updateProjectionMatrix();
+		    renderer.setSize(window.innerWidth, window.innerHeight);
+		});
+
+		window.addEventListener('keyup', (e) => {
+			if (e.key === 'ArrowLeft') keys.left = false;
+			if (e.key === 'ArrowRight') keys.right = false;
+		});
+
+		// Función para calcular los límites de la pantalla en coordenadas del mundo
+		function getScreenLimits()
+		{
+			const vFOV = THREE.MathUtils.degToRad(camera.fov);
+			const visibleHeight = 2 * Math.tan(vFOV / 2) * Math.abs(camera.position.z);
+			const visibleWidth = visibleHeight * camera.aspect;
+			return (visibleWidth / 2) - (width / 2);
+		}
+
+		// 4. Bucle principal de animación
+		function animate()
+		{
+			requestAnimationFrame(animate);
+
+			// Mover suavemente la paleta hacia la posición del ratón (0.1 es la velocidad de suavizado)
+			paddleGroup.position.x += (targetX - paddleGroup.position.x) * 0.3;
+
+			if (keys.left) paddleGroup.position.x -= speed;
+			if (keys.right) paddleGroup.position.x += speed;
+
+			// Limitar según el tamaño actual de la ventana
+			// const limit = getScreenLimits();
+			// if (paddleGroup.position.x < -limit) paddleGroup.position.x = -limit;
+			// if (paddleGroup.position.x > limit) paddleGroup.position.x = limit;
+
+			renderer.render(scene, camera);
+		}
+
+		animate();
+
+		// 5. Adaptación dinámica a la ventana (Responsive total)
+		window.addEventListener('resize', () =>
+		{
+			const newAspect = window.innerWidth / window.innerHeight;
+
+			// Actualizar los frustums de la cámara ortográfica
+			camera.left = -viewSize * newAspect / 2;
+			camera.right = viewSize * newAspect / 2;
+			camera.top = viewSize / 2;
+			camera.bottom = -viewSize / 2;
+			camera.updateProjectionMatrix();
+
+			// Actualizar el tamaño del renderizador
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		});
+	</script>
+</body>
+</html>
