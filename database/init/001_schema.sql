@@ -132,13 +132,29 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`yolanda`@`localhost`*/ /*!50003 TRIGGER check_if_sender_in_chat BEFORE INSERT ON messages FOR EACH ROW BEGIN
+/*!50003 CREATE*/ /*!50017 DEFINER=`pong_user`@`localhost`*/ /*!50003 TRIGGER check_if_sender_in_chat BEFORE INSERT ON messages FOR EACH ROW BEGIN
 IF NOT EXISTS ( SELECT 1 FROM chat_user WHERE chat = NEW.chat_id AND user = NEW.sender_id ) THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "Error: Sender not in chat"; END IF; END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Temporary table structure for view `user_chat_view`
+--
+
+DROP TABLE IF EXISTS `user_chat_view`;
+/*!50001 DROP VIEW IF EXISTS `user_chat_view`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8mb4;
+/*!50001 CREATE VIEW `user_chat_view` AS SELECT
+ 1 AS `chat_id`,
+  1 AS `name`,
+  1 AS `user`,
+  1 AS `username`,
+  1 AS `alias` */;
+SET character_set_client = @saved_cs_client;
 
 --
 -- Table structure for table `users`
@@ -184,12 +200,32 @@ UNLOCK TABLES;
 /*!50001 SET character_set_results     = utf8mb3 */;
 /*!50001 SET collation_connection      = utf8mb3_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`yolanda`@`localhost` SQL SECURITY DEFINER */
+/*!50013 DEFINER=`pong_user`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `chat_view` AS select `c`.`name` AS `name`,`u`.`username` AS `username`,`m`.`msg` AS `msg`,`m`.`time` AS `time` from ((`messages` `m` join `chats` `c` on(`c`.`id` = `m`.`chat_id`)) join `users` `u` on(`u`.`id` = `m`.`sender_id`)) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+--
+-- Final view structure for view `user_chat_view`
+--
+
+/*!50001 DROP VIEW IF EXISTS `user_chat_view`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb3 */;
+/*!50001 SET character_set_results     = utf8mb3 */;
+/*!50001 SET collation_connection      = utf8mb3_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`pong_user`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `user_chat_view` AS select `cu`.`chat` AS `chat_id`,`c`.`name` AS `name`,`cu`.`user` AS `user`,`u`.`username` AS `username`,`u`.`alias` AS `alias` from ((`chat_user` `cu` join `chats` `c` on(`cu`.`chat` = `c`.`id`)) join `users` `u` on(`cu`.`user` = `u`.`id`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
