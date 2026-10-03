@@ -3,8 +3,8 @@ package models
 import "time"
 
 type ChatView struct {
-	ID			int
-	ChatID		int
+	ID			uint
+	ChatID		uint
 	Name		string
 	Username	string
 	Msg			string

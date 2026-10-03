@@ -1,9 +1,9 @@
 package models
 
 type UsersInChatView struct {
-	ChatID		int
+	ChatID		uint
 	Name		string
-	UserID		int
+	UserID		uint
 	Username	string
 	Alias		*string
 }
