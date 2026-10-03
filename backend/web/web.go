@@ -18,13 +18,17 @@ type http_handler struct {
 
 func printUser(w *http.ResponseWriter, user *models.User) {
 
+	alias := ""
+	if user.Alias != nil {
+		alias = *user.Alias
+	}
 	fmt.Fprintf(*w, "ID: %d\nUSERNAME: %s\nALIAS:%s\n",
-		user.ID, user.Username, *(user.Alias))
+		user.ID, user.Username, alias)
 		
 }
 
 func printChat(w *http.ResponseWriter, chat *models.ChatView) {
-	fmt.Fprintf(*w, "%s: %s (%v)\n", chat.Username, chat.Msg, chat.Send_time)
+	fmt.Fprintf(*w, "%s: %s (%v)\n", chat.Username, chat.Msg, chat.SendTime)
 }
 
 

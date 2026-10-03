@@ -1,11 +1,11 @@
 package models
 
 type UsersInChatView struct {
-	ChatId		int
+	ChatID		int
 	Name		string
-	User		int
+	UserID		int
 	Username	string
-	Alias		string
+	Alias		*string
 }
 
 func (UsersInChatView) TableName() string {
