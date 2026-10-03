@@ -21,10 +21,24 @@ func (h *http_handler)getUserById(c *gin.Context) {
 	}
 }
 
-//GET /user/username/:username
+//GET /user/username/:username INCOMPLETA
 func (h *http_handler)getUserByUsername(c *gin.Context) {
 	c.Params.ByName("username")
 
+}
+
+//GET /chat/:id/users
+func (h *http_handler)getUsersInChat(c *gin.Context) {
+	chatId := c.Param("id")
+	var usersInChat []models.UsersInChatView
+
+	if err := h.gormdb.DB.Find(&usersInChat, chatId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error":"Chat not found"})
+	} else {
+		for _, user := range usersInChat {
+			c.JSON(http.StatusOK, user) //! Falta formatear bien el JSON
+		}
+	}
 }
 
 

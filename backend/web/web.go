@@ -37,6 +37,7 @@ func Web(db *dbp.GormDB) {
 	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png") //!ruta relativa a la de ejecución ahora que no se usa docker aún, beware en el futuroooo
 
 	r.GET("/user/id/:id", h.getUserById)
+	r.GET("/chat/:id/users", h.getUsersInChat)
 	r.GET("/user/username/:username", h.getUserByUsername)
 	//http.HandleFunc("/user/", h.getUser)
 	//http.HandleFunc("/chat/", h.chatHandler)
