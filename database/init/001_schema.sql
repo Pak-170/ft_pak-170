@@ -167,6 +167,7 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(20) NOT NULL,
   `alias` varchar(255) DEFAULT NULL,
+  `password_hash` VARCHAR(255),
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -179,18 +180,27 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'pepe','pepito'),
-(3,'pepa','pepa pepita'),
-(5,'pepa2','pepa pepita'),
-(12,'pepa3','pepa pepita'),
-(13,'pepa4','pepa pepita'),
-(15,'pepa5','pepa pepita');
+(1,'pepe','pepito', NULL),
+(3,'pepa','pepa pepita', NULL),
+(5,'pepa2','pepa pepita', NULL),
+(12,'pepa3','pepa pepita', NULL),
+(13,'pepa4','pepa pepita', NULL),
+(15,'pepa5','pepa pepita', NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Final view structure for view `chat_view`
 --
+
+CREATE TABLE sessions (
+  id          CHAR(64) NOT NULL,
+  user_id     INT NOT NULL,
+  expires_at  DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  KEY user_id (user_id),
+  CONSTRAINT sessions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*!50001 DROP VIEW IF EXISTS `chat_view`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
