@@ -14,15 +14,18 @@
   },
   "devDependencies": {
     "@rsbuild/core": "2.2",
+    "@rsbuild/plugin-sass": "^2.0.1",
     "@rsbuild/plugin-svelte": "^2.0.1",
     "@types/three": "^0.185.4",
     "prettier": "^3.0.1",
     "prettier-plugin-svelte": "^4.1.1",
+    "sass": "^1.105.1",
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3"
   },
   "dependencies": {
     "svelte": "^5.55.7",
+    "svelte-spa-router": "^5.1.1",
     "three": "^0.185.1"
   },
   "allowScripts": {

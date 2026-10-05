@@ -10,6 +10,51 @@ services:
     ports:
       - 3000:3000
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - go-tmp:/app/tmp
+      - go-mod-cache:/go/pkg/mod
+    environment:
+      PORT: 8080
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      init: true
+    ports:
+      - 8080:8080
+    depends_on:
+      database:
+        condition: service_healthy
+    
+  
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./database/init:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 90s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   node-build-cache:
   svelte-check-cache:
+  go-tmp:
+  go-mod-cache:
+  db_data:

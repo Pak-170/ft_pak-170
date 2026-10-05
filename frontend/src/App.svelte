@@ -1,32 +1,23 @@
-<script lang="ts">
-  import Canvas from './Canvas.svelte';
+<script>
+  import Router from 'svelte-spa-router';
+  import TestCube from './TestCube.svelte';
+  import Test2 from './Test2.svelte';
+  import Login from './Login.svelte';
+  import Chat from './Chat.svelte';
 
-  let speed = $state(1);
+  const routes = {
+    '/': TestCube,
+    '/login': Login,
+    '/chat': Chat,
+    '/test2': Test2,
+  };
 </script>
 
-<div>
-  <div class="inner">
-    <p>Speeddddd: {Intl.NumberFormat().format(speed)}</p>
-    <button onclick={() => (speed *= 1.2)}> Increment </button>
-  </div>
-  <Canvas {speed} />
-</div>
+<nav>
+  <a href="#/">TestCube</a>
+  <a href="#/test2">Test2</a>
+  <a href="#/login">Login</a>
+  <a href="#/chat">Chat</a>
+</nav>
 
-<style>
-  div {
-    width: auto;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-
-    .inner {
-      border-radius: 1rem;
-      background-color: darkblue;
-      padding-top: 1rem;
-      height: auto;
-    }
-  }
-</style>
+<Router {routes} />
