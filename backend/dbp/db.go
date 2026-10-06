@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -15,6 +16,7 @@ import (
 )
 
 const ALL = -1
+const DB_TIMEOUT = 5
 
 // SELECT ---------------------------------------------------------------------
 
@@ -29,9 +31,10 @@ func SelectChatByChatname(db *gorm.DB, chatname string) ([]models.ChatView, erro
 	return gorm.G[models.ChatView](db).Where("name = ?", chatname).Find(ctx)
 } */
 
-func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) { //! Optimizar las consultas
-	ctx := context.Background() //! investigar mejor esto de context
+func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]models.ChatView, error) { //! Optimizar las consultas
 	chatUserRelation, err := gorm.G[models.ChatUserRelation](db).Where("user = ?", userID).Find(ctx)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
 
 	if err != nil {
 		return nil, err
@@ -39,7 +42,7 @@ func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) {
 
 	var chatsMsgs []models.ChatView
 	for _, chatUserIsIn := range chatUserRelation {
-		oneChatMsgs, err := gorm.G[models.ChatView](db).Where("chat_id = ?", chatUserIsIn.ChatID).Find(ctx)
+		oneChatMsgs, err := gorm.G[models.ChatView](db).Where("chat_id = ?", chatUserIsIn.ChatID).Find(ctxWithTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -48,31 +51,33 @@ func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) {
 	return chatsMsgs, err
 }
 
-func	SelectChatIds(db *gorm.DB, userID int) ([]int, error) {
-	ctx := context.Background()
-
+func	SelectChatIds(ctx context.Context, db *gorm.DB, userID int) ([]int, error) {
 	var	chatIds []int
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
 	var err error
 
 	if userID == ALL {
 		err = gorm.G[models.Chat](db).Select("id").Scan(ctx, &chatIds)
 	} else {
-		err = gorm.G[models.ChatUserRelation](db).Select("chat").Where("user = ?", userID).Scan(ctx, &chatIds)
+		err = gorm.G[models.ChatUserRelation](db).Select("chat").Where("user = ?", userID).Scan(ctxWithTimeout, &chatIds)
 	}
 	return chatIds, err
 }
 
 // INSERT ---------------------------------------------------------------------
 
-func	InsertMsg(db *gorm.DB, msgInChat *models.ChatView) error {
-	ctx := context.Background()
+func	InsertMsg(ctx context.Context, db *gorm.DB, msgInChat *models.ChatView) error {
 	var	msgInDB models.Message = models.Message{
 		ChatID: msgInChat.ChatID,
 		Msg: msgInChat.Msg,
 		Time: msgInChat.SendTime,
 	}
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
 	var	err error
-	err = gorm.G[models.User](db).Select("id").Where("username = ?", msgInChat.Username).Scan(ctx, &msgInDB.SenderID)
+
+	err = gorm.G[models.User](db).Select("id").Where("username = ?", msgInChat.Username).Scan(ctxWithTimeout, &msgInDB.SenderID)
 	if err != nil {
 		log.Printf("ERROR CREATING THE MSG MODEL: %v\n", err)
 	}
