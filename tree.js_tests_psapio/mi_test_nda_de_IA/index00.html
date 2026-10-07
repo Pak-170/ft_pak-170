@@ -1,56 +1,69 @@
 <!DOCTYPE html>
 <html>
-
-	<head>
-		<title> mi primer proyecto tree.js</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<meta property="og:title" content="three.js webgl - geometry - cube">
-		<meta property="og:type" content="website">
-		<meta property="og:url" content="https://threejs.org/examples/webgl_geometry_cube.html">
-		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_geometry_cube.jpg">
-		<link type="text/css" rel="stylesheet" href="main.css">
-		<style>
-		body {
-			margin: 0;
-		}		
-		</style>
+<head>
+    <title>Mi primer proyecto three.js</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+    </style>
 </head>
 <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-		<script type="importmap">
-			{
-				"imports":
-				{
-					"three": "../build/three.module.js",
-					"three/addons/": "./jsm/"
-				}
-			}
-		</script>
+    <script>
+        var WIDTH = 400;
+        var HEIGHT = 300;
 
+        var VIEW_ANGLE = 50;
+        var ASPECT = WIDTH / HEIGHT;
+        var NEAR = 100;
+        var FAR = 10000;
 
-	<script type="module" src="test.js"></script>
+        var renderer = new THREE.WebGLRenderer(); 
+        var camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+        var scene = new THREE.Scene();
+
+        // 1. CUBO VERDE
+        const geometry_cube = new THREE.BoxGeometry(100, 100, 100); // Le subí el tamaño para que se vea de lejos
+        const material_cube = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const cube_cube = new THREE.Mesh(geometry_cube, material_cube);
+        
+        // Movemos el cubo verde a la derecha para que no se superponga con el rojo
+        cube_cube.position.x = 250; 
+        scene.add(cube_cube);
+
+        // 2. CUBO ROJO
+        var geometry = new THREE.BoxGeometry(300, 300, 300);
+        var material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); 
+        var cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        // 3. CÁMARA Y RENDERIZADOR
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.z = 1000;
+
+        renderer.setSize(WIDTH, HEIGHT);
+        document.body.appendChild(renderer.domElement);
+
+        renderer.render(scene, camera);
+
+        function animate()
+        {
+
+			cube.rotation.x += 0.005;
+			cube.rotation.y += 0.01;
+
+			renderer.render( scene, camera );
+
+		}
+    </script>
+</body>
+</html>
 </body>
 </html>
 
+https://share.gemini.google/rh0G9Rs91WXg
 
-
-
-
-
-
-<!--
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>My first three.js app</title>
-		<style>
-			body { margin: 0; }
-			</style>
-  </head>
-  <body>
-	  <script type="module" src="/main.js"></script>
-	</body>
-	</html>
--->
+https://web.dev/articles/three-intro?hl=it
