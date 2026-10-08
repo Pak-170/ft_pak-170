@@ -1,18 +1,21 @@
 <script>
   import Router from 'svelte-spa-router';
-  import Home from './Home.svelte';
+  import TestCube from './TestCube.svelte';
+  import Test2 from './Test2.svelte';
   import Login from './Login.svelte';
   import Chat from './Chat.svelte';
 
   const routes = {
-    '/': Home,
+    '/': TestCube,
     '/login': Login,
     '/chat': Chat,
+    '/test2': Test2,
   };
 </script>
 
 <nav>
-  <a href="#/">Home</a>
+  <a href="#/">TestCube</a>
+  <a href="#/test2">Test2</a>
   <a href="#/login">Login</a>
   <a href="#/chat">Chat</a>
 </nav>
