@@ -1,13 +1,18 @@
 <script lang="ts">
   let email = $state('');
   let password = $state('');
+  let username = $state('');
   let register = $state(false);
+  let confPassword = $state('');
 
   function submit(e: Event) {
     e.preventDefault();
 
+
     if (register) {
-      console.log('Register:', email, password);
+	  if (password !== confPassword)
+	  	return;
+      console.log('Register:', username, email, password);
     } else {
       console.log('Login:', email, password);
     }
@@ -30,8 +35,18 @@
     </div>
     <form onsubmit={submit}>
       <label>
-        <span>IDENTIFICATION</span>
+	  	{#if register}
+        <span>OPERATOR ID</span>
         <input
+          type="text"
+          placeholder="USERNAME"
+          bind:value={username}
+          autocomplete="nickname"
+          required
+        />
+		{/if}
+		<span>{register ? 'NETWORK ID' : 'IDENTIFICATION'}</span>
+		<input
           type="email"
           placeholder="USER@NETWORK"
           bind:value={email}
@@ -48,6 +63,23 @@
           autocomplete={register ? 'new-password' : 'current-password'}
           required
         />
+		{#if register}
+		<span>CONFIRM ACCESS CODE</span>
+        <input
+          type="password"
+          placeholder="••••••••"
+          bind:value={confPassword}
+          autocomplete={register ? 'new-password' : 'current-password'}
+          required
+        />
+		{#if confPassword.length > 0}
+		  {#if password === confPassword}
+		    <span class="passconfirm">ACCESS CODES MATCH</span>
+		  {:else}
+		    <span class="passconfirm">ACCESS CODES DO NOT MATCH</span>
+		  {/if}
+		{/if}
+		{/if}
       </label>
       <button class="submit" type="submit">
         {register ? 'CREATE ACCOUNT' : 'LOG IN'}
@@ -209,7 +241,7 @@
     font-family: 'Press Start 2P', monospace;
     font-size: 11px;
     cursor: pointer;
-    box-shadow: 5px 5px 0 var(--green-dark);
+    box-shadow: 0 6px 0 var(--green-dark);
     transition:
       transform 80ms linear,
       box-shadow 80ms linear,
@@ -218,12 +250,12 @@
 
   .submit:hover {
     background: var(--green-light);
-    transform: translate(2px, 2px);
-    box-shadow: 3px 3px 0 var(--green-dark);
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 var(--green-dark);
   }
 
   .submit:active {
-    transform: translate(5px, 5px);
+    transform: translateY(5px);
     box-shadow: none;
   }
 
@@ -249,6 +281,13 @@
     padding-top: 12px;
     border-top: 1px dashed var(--green-dark);
     color: var(--green-dark);
+    letter-spacing: 1px;
+  }
+
+  .passconfirm {
+    display: flex;
+	font-size: 17px;
+    color: var(--green);
     letter-spacing: 1px;
   }
 
