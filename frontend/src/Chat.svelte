@@ -1,12 +1,31 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
 
   let username = 'username';
   let message = '';
   let messages: { username: string; message: string }[] = [];
+  let interval: ReturnType<typeof setInterval>;
 
   let messagesContainer: HTMLDivElement;
+//Para Testes {
+  function loadMessages() {
+    const saved = localStorage.getItem('chat-messages');
+    if (saved) {
+      try {
+        messages = JSON.parse(saved);
+      } catch {
+        messages = [];
+      }
+    }
+  }
 
+  onMount(() => {
+    loadMessages();
+    interval = setInterval(() => {
+      loadMessages();
+    }, 1000);
+  });
+// }
   const submit = async () => {
     if (!message.trim()) return;
 
@@ -17,6 +36,9 @@
         message,
       },
     ];
+	//Para Testes {
+    localStorage.setItem('chat-messages', JSON.stringify(messages, null, 2));
+	// }
 
     message = '';
     await tick();
