@@ -44,8 +44,8 @@
 
     function animate() {
       requestAnimationFrame(animate);
-      cube.rotation.x = 0.01 * mouse_y;
-      cube.rotation.y = 0.01 * mouse_x;
+      cube.rotation.x = 0.01 * mouse_x;
+      cube.rotation.y = 0.01 * mouse_y;
       // cube.position.x = 0.01 * mouse_x;
       // cube.position.y = 0.01 * - mouse_y;
       renderer.render(scene, camera);
