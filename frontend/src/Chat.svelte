@@ -1,57 +1,31 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import { messages, sendMessage } from '../client';
 
   let username = 'username';
   let message = '';
-  let messages: { username: string; message: string }[] = [];
-  let interval: ReturnType<typeof setInterval>;
-
   let messagesContainer: HTMLDivElement;
-//Para Testes {
-  function loadMessages() {
-    const saved = localStorage.getItem('chat-messages');
-    if (saved) {
-      try {
-        messages = JSON.parse(saved);
-      } catch {
-        messages = [];
-      }
-    }
+
+	function submit() {
+    if (!message.trim()) return;
+	sendMessage({username, message});
+    message = '';
   }
 
-  onMount(() => {
-    loadMessages();
-    interval = setInterval(() => {
-      loadMessages();
-    }, 1000);
+  onMount(async () => {
+	await tick();
+
+	if(messagesContainer) {
+		messagesContainer.scrollTop = messagesContainer.scrollHeight;
+	}
   });
-// }
-  const submit = async () => {
-    if (!message.trim()) return;
-
-    messages = [
-      ...messages,
-      {
-        username,
-        message,
-      },
-    ];
-	//Para Testes {
-    localStorage.setItem('chat-messages', JSON.stringify(messages, null, 2));
-	// }
-
-    message = '';
-    await tick();
-
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  };
 </script>
 
+<div class="scanlines"></div>
 <div class="chat">
-  <div class="scanlines"></div>
 
   <div class="header">
-    <input bind:value={username} />
+    <h1>Global Chat</h1>
   </div>
 
   <div class="messages" bind:this={messagesContainer}>
@@ -92,14 +66,6 @@
     box-shadow:
       inset 0 0 15px --scanline,
       0 0 8px --scanline-glow;
-  }
-
-  .header input {
-    width: 100%;
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--green);
   }
 
   .messages {
