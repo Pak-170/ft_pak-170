@@ -1,4 +1,4 @@
-package main
+//package main
 
 import (
 	"log"
@@ -7,10 +7,10 @@ import (
 	//	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
+
 )
 
-var upgrader = websocket.Upgrader {}
+// var upgrader = websocket.Upgrader {}
 
 const (
 	join = 0

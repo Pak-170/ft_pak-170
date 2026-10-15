@@ -3,7 +3,7 @@ package models
 import "time"
 
 type ChatView struct {
-	Name		string
+	chat_id		uint
 	Username	string
 	Msg			string
 	Send_time	time.Time
