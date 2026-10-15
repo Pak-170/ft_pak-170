@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"go_pakito/dbp"
 	"go_pakito/models"
-//	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type http_handler struct {
+type httpHandler struct {
 	gormdb *dbp.GormDB
 }
 
@@ -20,18 +19,17 @@ func printUser(w *http.ResponseWriter, user *models.User) {
 
 	fmt.Fprintf(*w, "ID: %d\nUSERNAME: %s\nALIAS:%s\n",
 		user.ID, user.Username, *(user.Alias))
-		
+
 }
 
 func printChat(w *http.ResponseWriter, chat *models.ChatView) {
 	fmt.Fprintf(*w, "%s: %s (%v)\n", chat.Username, chat.Msg, chat.Send_time)
 }
 
-
 // ------------------------
 
 func Web(db *dbp.GormDB) {
-	var h http_handler = http_handler{db}
+	var h httpHandler = httpHandler{db}
 
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png") //!ruta relativa a la de ejecución ahora que no se usa docker aún, beware en el futuroooo
@@ -39,6 +37,7 @@ func Web(db *dbp.GormDB) {
 	r.GET("/", h.home)
 	r.GET("/user/:id", h.getUserById)
 	r.GET("/chat/:id/users", h.getUsersInChat)
+	r.GET("/ws/api/chat/:chatID", h.handleWS)
 
 	r.Run(":8080")
 }
