@@ -201,7 +201,7 @@ UNLOCK TABLES;
 /*!50001 SET collation_connection      = utf8mb3_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`pong_user`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `chat_view` AS select `c`.`name` AS `name`,`u`.`username` AS `username`,`m`.`msg` AS `msg`,`m`.`time` AS `time` from ((`messages` `m` join `chats` `c` on(`c`.`id` = `m`.`chat_id`)) join `users` `u` on(`u`.`id` = `m`.`sender_id`)) */;
+/*!50001 VIEW `chat_view` AS select `chat_id`,`u`.`username` AS `username`,`m`.`msg` AS `msg`,`m`.`time` AS `time` from ((`messages` `m` join `chats` `c` on(`c`.`id` = `m`.`chat_id`)) join `users` `u` on(`u`.`id` = `m`.`sender_id`)) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
