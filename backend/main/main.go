@@ -10,6 +10,6 @@ func main() {
 	dbconnection, sqldb := dbp.OpenDatabaseConnection()
 	defer sqldb.Close()
 
-	var gormdb dbp.GormDB = dbp.GormDB{DB:dbconnection}
+	var gormdb web.GormDB = web.GormDB{DB:dbconnection}
 	web.Web(&gormdb)
 }
