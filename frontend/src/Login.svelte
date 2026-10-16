@@ -8,10 +8,8 @@
   function submit(e: Event) {
     e.preventDefault();
 
-
     if (register) {
-	  if (password !== confPassword)
-	  	return;
+      if (password !== confPassword) return;
       console.log('Register:', username, email, password);
     } else {
       console.log('Login:', email, password);
@@ -35,18 +33,18 @@
     </div>
     <form onsubmit={submit}>
       <label>
-	  	{#if register}
-        <span>OPERATOR ID</span>
+        {#if register}
+          <span>OPERATOR ID</span>
+          <input
+            type="text"
+            placeholder="USERNAME"
+            bind:value={username}
+            autocomplete="nickname"
+            required
+          />
+        {/if}
+        <span>{register ? 'NETWORK ID' : 'IDENTIFICATION'}</span>
         <input
-          type="text"
-          placeholder="USERNAME"
-          bind:value={username}
-          autocomplete="nickname"
-          required
-        />
-		{/if}
-		<span>{register ? 'NETWORK ID' : 'IDENTIFICATION'}</span>
-		<input
           type="email"
           placeholder="USER@NETWORK"
           bind:value={email}
@@ -63,23 +61,23 @@
           autocomplete={register ? 'new-password' : 'current-password'}
           required
         />
-		{#if register}
-		<span>CONFIRM ACCESS CODE</span>
-        <input
-          type="password"
-          placeholder="••••••••"
-          bind:value={confPassword}
-          autocomplete={register ? 'new-password' : 'current-password'}
-          required
-        />
-		{#if confPassword.length > 0}
-		  {#if password === confPassword}
-		    <span class="passconfirm">ACCESS CODES MATCH</span>
-		  {:else}
-		    <span class="passconfirm">ACCESS CODES DO NOT MATCH</span>
-		  {/if}
-		{/if}
-		{/if}
+        {#if register}
+          <span>CONFIRM ACCESS CODE</span>
+          <input
+            type="password"
+            placeholder="••••••••"
+            bind:value={confPassword}
+            autocomplete={register ? 'new-password' : 'current-password'}
+            required
+          />
+          {#if confPassword.length > 0}
+            {#if password === confPassword}
+              <span class="passconfirm">ACCESS CODES MATCH</span>
+            {:else}
+              <span class="passconfirm">ACCESS CODES DO NOT MATCH</span>
+            {/if}
+          {/if}
+        {/if}
       </label>
       <button class="submit" type="submit">
         {register ? 'CREATE ACCOUNT' : 'LOG IN'}
@@ -286,7 +284,7 @@
 
   .passconfirm {
     display: flex;
-	font-size: 17px;
+    font-size: 17px;
     color: var(--green);
     letter-spacing: 1px;
   }
