@@ -3,10 +3,10 @@ package models
 import "time"
 
 type ChatView struct {
-	chat_id		uint
-	Username	string
-	Msg			string
-	Send_time	time.Time
+	ChatID		uint		`gorm:"column:chat_id"`
+	Username	string		`gorm:"column:username"`
+	Msg			string		`gorm:"column:msg"`
+	SendTime	time.Time	`gorm:"column:time"`
 }
 
 func (ChatView) TableName() string {
