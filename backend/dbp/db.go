@@ -8,15 +8,11 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
+	"gorm.io/gorm/logger"
 
 	"database/sql"
 	"go_pakito/models"
 )
-
-type GormDB struct {
-	DB *gorm.DB
-}
 
 // ------------------------ select by
 
@@ -30,6 +26,26 @@ func SelectChatByChatname(db *gorm.DB, chatname string) ([]models.ChatView, erro
 	fmt.Println(gorm.G[models.ChatView](db).First(ctx))
 	return gorm.G[models.ChatView](db).Where("name = ?", chatname).Find(ctx)
 }
+
+func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) { //! Optimizar las consultas
+	ctx := context.Background()
+	chatUserRelation, err := gorm.G[models.ChatUserRelation](db).Where("user = ?", userID).Find(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var chatsMsgs []models.ChatView
+	for _, chatUserIsIn := range chatUserRelation {
+		oneChatMsgs, err := gorm.G[models.ChatView](db).Where("chat_id = ?", chatUserIsIn.ChatID).Find(ctx)
+		if err != nil {
+			return nil, err
+		}
+		chatsMsgs = append(chatsMsgs, oneChatMsgs...)
+	}
+	return chatsMsgs, err
+}
+
 
 // ------------------------
 
@@ -52,9 +68,8 @@ func OpenDatabaseConnection() (*gorm.DB, *sql.DB) {
 	db, err := gorm.Open(mysql.Open(dsn),
 		&gorm.Config{
 			TranslateError: true,
-			NamingStrategy: schema.NamingStrategy{
-				SingularTable: true,
-			}})
+			Logger: logger.Default.LogMode(logger.Info),
+		})
 	if err != nil {
 		log.Fatalf("open db error: %v", err)
 	}
