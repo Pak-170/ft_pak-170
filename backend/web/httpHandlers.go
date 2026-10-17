@@ -40,9 +40,9 @@ func (db *GormDB) home(c *gin.Context) {
 // - WS Handler----------------------------------------------------------------
 
 func (db *GormDB) handleWS(c *gin.Context) {
-
+	log.Printf("WEBSOCKET CONNECTED!!!!\n")
 	// Upgrading connection.
-	wsconn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	wsconn, err := upgrader.Upgrade(c.Writer, c.Request, nil) 
 
 	if err != nil {
 		log.Printf("ERROR UPGRADING HTTP CONECTION: %v\n", err)
