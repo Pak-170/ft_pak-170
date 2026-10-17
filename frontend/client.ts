@@ -1,5 +1,4 @@
-const port = 8080;
-const ws = new WebSocket(`ws://localhost:${port}/ws/api/chat?user-id=1`);
+const ws = new WebSocket(`/api/chat?user-id=1`);
 
 type ChatMessage = {
   ChatID: number;

@@ -35,7 +35,7 @@ func Web(db *GormDB) {
 	r.GET("/", db.home)
 	r.GET("/user/:id", db.getUserById)
 	r.GET("/chat/:id/users", db.getUsersInChat)
-	r.GET("/ws/api/chat", db.handleWS)
+	r.GET("/api/chat", db.handleWS)
 
 	r.Run(":8080")
 }
