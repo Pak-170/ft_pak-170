@@ -54,11 +54,12 @@ func (u *user)reader() {
 	u.ws.WriteJSON(allChats)
 	//c.addUser(u)
 	for {
-		_, _, err := ws.ReadMessage() //! HABRÁ QUE PARSEAR DESPUÉS PARA RECIBIR LOS MENSAJES COMO JSON
+		_, msg, err := ws.ReadMessage() //! HABRÁ QUE PARSEAR DESPUÉS PARA RECIBIR LOS MENSAJES COMO JSON
 		if err != nil {
 			log.Println(err);
 			break
 		}
+		log.Println(string(msg));
 		//! Falta meter los mensajes en la BD
 		//c.broadcast(string(msg), u, chatMsg)
 	}
