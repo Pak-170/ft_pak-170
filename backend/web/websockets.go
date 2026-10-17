@@ -8,7 +8,7 @@ import (
 	"go_pakito/dbp"
 )
 
-var upgrader = websocket.Upgrader {} //!Gestionar el tema de conexión por proxy
+var upgrader = websocket.Upgrader {CheckOrigin: func(r *http.Request) bool { return true }} //!Gestionar el tema de conexión por proxy
 
 const (
 	join = 0
