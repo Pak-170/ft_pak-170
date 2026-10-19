@@ -1,3 +1,5 @@
+import { writable } from 'svelte/store';
+
 const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
 const userId = params.get('user-id') ?? '1';
 const ws = new WebSocket(`/api/chat?user-id=${userId}`);
@@ -10,29 +12,7 @@ type ChatMessage = {
   SendTime: string;
 };
 
-export const messages: ChatMessage[] = [
-  {
-    ChatID: 1,
-	UserID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 2,
-	UserID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 3,
-	UserID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-];
+export const messages = writable<ChatMessage[]>([]);
 
 ws.onopen = () => {
   console.log('[Client] connected.');
@@ -42,11 +22,13 @@ ws.onmessage = (event: MessageEvent) => {
   try {
     const data = JSON.parse(event.data) as ChatMessage | ChatMessage[];
 
-    if (Array.isArray(data)) {
-      messages.push(...data);
-    } else {
-      messages.push(data);
-    }
+    messages.update((currentMessages) => {
+      if (Array.isArray(data)) {
+        return [...currentMessages, ...data];
+      }
+      return [...currentMessages, data];
+    });
+    console.log('[Client] Messages received:', data);
   } catch {
     console.error('[Client] Invalid message received.');
   }
@@ -68,11 +50,13 @@ export function sendMessage(chatID: number, username: string, message: string) {
 
   const data: ChatMessage = {
     ChatID: chatID,
-	UserID: Number(userId),
+    UserID: Number(userId),
     Username: username,
     Msg: message,
     SendTime: new Date().toISOString(),
   };
 
   ws.send(JSON.stringify(data));
+
+  messages.update((currentMessages) => [...currentMessages, data]);
 }
