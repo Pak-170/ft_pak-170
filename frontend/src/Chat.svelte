@@ -1,15 +1,22 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { tick } from 'svelte';
   import { messages, sendMessage } from '../client';
 
-  let username = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('username') ?? 'DefaultUser';
+  let username =
+    new URLSearchParams(window.location.hash.split('?')[1] ?? '').get(
+      'username',
+    ) ?? 'DefaultUser';
   let message = '';
   let selectedChatID: number | null = null;
   let messagesContainer: HTMLDivElement;
 
-  $: chatIDs = [...new Set(messages.map((msg) => msg.ChatID))];
-  $: selectedMessages = messages.filter((msg) => msg.ChatID === selectedChatID);
-
+  $: chatIDs = [...new Set($messages.map((msg) => msg.ChatID))];
+  $: selectedMessages = $messages.filter(
+    (msg) => msg.ChatID === selectedChatID,
+  );
+  $: if (selectedChatID === null && chatIDs.length > 0) {
+    selectedChatID = chatIDs[0];
+  }
   function submit() {
     if (!message.trim() || selectedChatID === null) return;
 
@@ -19,7 +26,10 @@
 
   async function selectChat(chatID: number) {
     selectedChatID = chatID;
+    await scrollDown();
+  }
 
+  async function scrollDown() {
     await tick();
 
     if (messagesContainer) {
@@ -27,13 +37,9 @@
     }
   }
 
-  onMount(async () => {
-    await tick();
-
-    if (chatIDs.length > 0) {
-      selectedChatID = chatIDs[0];
-    }
-  });
+  $: if (selectedMessages.length > 0) {
+    scrollDown();
+  }
 </script>
 
 <div class="scanlines"></div>
