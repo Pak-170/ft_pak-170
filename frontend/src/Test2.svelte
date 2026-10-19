@@ -1,124 +1,160 @@
 <script lang="ts">
-  import * as THREE from 'three';
-  import { onMount } from 'svelte';
+	import * as THREE from 'three';
+	import { onMount } from 'svelte';
 
-  let { speed = 0 } = $props();
+	let { speed = 0 } = $props();
 
-  let canvas: HTMLCanvasElement;
-  let wrapper: HTMLDivElement;
+	let canvas: HTMLCanvasElement;
+	let wrapper: HTMLDivElement;
 
-  let mouse_x = 0;
-  let mouse_y = 0;
+	let width = 0;
+	let height = 0;
 
-  let width = 0;
-  let height = 0;
+	// Límites físicos directos del tablero del pad 1
+	const PAD1_MIN_X = -4.1;
+	const PAD1_MAX_X = 4.1;
+	const PAD1_MIN_Z = 5.0; // Línea central
+	const PAD1_MAX_Z = 9.5; // Fondo de pista (portería propia)
 
-  function handleMouseMove(event: MouseEvent) {
-	if (!wrapper) return;
-	const rect = wrapper.getBoundingClientRect();
-	// Coordenadas relativas al centro del wrapper/canvas
-	mouse_x = event.clientX - (rect.left + rect.width / 2);
-	mouse_y = event.clientY - (rect.top + rect.height / 2);
-  }
-
-  onMount(() => {
-	width = wrapper.getBoundingClientRect().width;
-	height = wrapper.getBoundingClientRect().height;
-
-	const scene = new THREE.Scene();
-	const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
-
-	const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-	renderer.setSize(width, height);
-	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Mejora la nitidez en pantallas Retina
-
-	const color = 0xffffff;
-	const intensity = 3;
-	const light = new THREE.DirectionalLight(color, intensity);
-	light.position.set(0.1, 0.1, 0.1);
-	scene.add(light);
-	
-	const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); 
-	scene.add(ambientLight);
-
-	const geometry = new THREE.BoxGeometry(10, 10, 10);
-	const material = new THREE.MeshPhongMaterial({ color: '#f0ff00' });
+	// Límites físicos directos del tablero del pad 2
+	const PAD2_MIN_X = -4.1;
+	const PAD2_MAX_X = 4.1;
+	const PAD2_MIN_Z = 5.0; // Línea central
+	const PAD2_MAX_Z = -9.5; // Fondo de pista (portería propia)
 
 
-// 1. Cargador de texturas
-	const textureLoader = new THREE.TextureLoader();
+	// Sensibilidad del movimiento (Ajusta este valor a tu gusto)
+	const SENSITIVITY = 0.015;
 
-// 2. Array de 6 materiales
-// 2. Creamos materiales iniciales (con un color para evitar el negro mientras cargan)
-		const materials =
-		[
-			new THREE.MeshPhongMaterial({ color: 0xffffff }),
-			new THREE.MeshPhongMaterial({ color: 0xffffff }),
-			new THREE.MeshPhongMaterial({ color: 0xffffff }),
-			new THREE.MeshPhongMaterial({ color: 0xffffff }),
-			new THREE.MeshPhongMaterial({ color: 0xffffff }),
-			new THREE.MeshPhongMaterial({ color: 0xffffff })
-		];
+	let PadP1: THREE.Mesh | null = null;
+	let PadP2: THREE.Mesh | null = null;
 
-		// 3. Rutas de las imágenes
-		const texturePaths =
-		[
-			'cube_texture/00.png',
-			'cube_texture/01.png',
-			'cube_texture/02.png',
-			'cube_texture/03.png',
-			'cube_texture/04.png',
-			'cube_texture/05.png'
-		];
+	function handleMouseMove(event: MouseEvent) {
+		// Solo movemos el pad si el puntero está bloqueado/atrapado dentro del canvas
+		if (document.pointerLockElement === canvas && PadP1) {
+			// Sumamos el desplazamiento del ratón directamente a las coordenadas 3D del Pad
+			let nextX1 = PadP1.position.x + event.movementX * SENSITIVITY;
+			let nextZ1 = PadP1.position.z + event.movementY * SENSITIVITY;
 
-// 4. no entiendo esto:
-		texturePaths.forEach((path, index) =>{
-			textureLoader.load(path, (texture) => {
-				materials[index].map = texture;
-				materials[index].needsUpdate = true;
-			});
-		});
 
-		// 3. Le pasamos el array de materiales al Mesh
-	const cube = new THREE.Mesh(geometry, materials);
-	scene.add(cube);
+			// Límites directos e infranqueables (Clamp)
+			PadP1.position.x = Math.max(PAD1_MIN_X, Math.min(PAD1_MAX_X, nextX1));
+			PadP1.position.z = Math.max(PAD1_MIN_Z, Math.min(PAD1_MAX_Z, nextZ1));
+		}
+	}
 
-	camera.position.z = 60;
+	// Flipa que con esto nos capturamos el raton!Al hacer clic en el lienzo del juego
+	function requestLock()
+	{
+		canvas.requestPointerLock();
+	}
 
-	function animate() {
-		requestAnimationFrame(animate);
+	onMount(() => {
+		width = wrapper.getBoundingClientRect().width;
+		height = wrapper.getBoundingClientRect().height;
+
+		// 1. ESCENA Y RENDERIZADOR
+		const scene = new THREE.Scene();
+		const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
 		
-		// Interpolación suave opcional o mapeo directo
-		cube.rotation.x = 0.005 * mouse_y;
-		cube.rotation.y = 0.005 * mouse_x;
-		cube.position.x = 0.05 * mouse_x;
-		cube.position.y = 0.05 * - mouse_y;
-	
-		renderer.render(scene, camera);
-	}
+		const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+		renderer.setSize(width, height);
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-	animate();
+		// 2. ILUMINACIÓN
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); 
+		scene.add(ambientLight);
+		
+		const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+		dirLight.position.set(5, 12, 8);
+		scene.add(dirLight);
 
-	// Opcional: Manejar el redimensionado de ventana
-	function handleResize() {
-	  if (!wrapper) return;
-	  width = wrapper.getBoundingClientRect().width;
-	  height = wrapper.getBoundingClientRect().height;
-	  camera.aspect = width / height;
-	  camera.updateProjectionMatrix();
-	  renderer.setSize(width, height);
-	}
+		// 3. ESTRUCTURA DE LA MESA (GRUPO)
+		const mesaGroup = new THREE.Group();
 
-	window.addEventListener('resize', handleResize);
+		// 3.1 Tablero de juego
+		const geometryMesa = new THREE.BoxGeometry(10.5, 0.5, 20);
+		const materialMesa = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.3 }); 
+		const mesa = new THREE.Mesh(geometryMesa, materialMesa);
+		mesaGroup.add(mesa);
 
-	return () => {
-	  window.removeEventListener('resize', handleResize);
-	};
-  });
+		// Material para los bordes metálicos
+		const materialBorde = new THREE.MeshStandardMaterial({ color: 0x8a9597, metalness: 0.4, roughness: 0.5 });
+
+		// 3.2 Paredes laterales
+		const geometryParedLarga = new THREE.BoxGeometry(1, 1.5, 20);
+		
+		const paredIzq = new THREE.Mesh(geometryParedLarga, materialBorde);
+		paredIzq.position.set(-5.7, 0.5, 0);
+		
+		const paredDer = new THREE.Mesh(geometryParedLarga, materialBorde);
+		paredDer.position.set(5.7, 0.5, 0);
+
+		// 3.3 Pad Player 1 (Azul)
+		const geometryPadP1 = new THREE.BoxGeometry(2, 0.5, 0.7);
+		const materialPadP1 = new THREE.MeshStandardMaterial({ color: 0x0000ff, roughness: 0.3 }); 
+		PadP1 = new THREE.Mesh(geometryPadP1, materialPadP1);
+		PadP1.position.set(0, 0.5, 8);
+
+		// 3.3 Pad Player 2 (verde)
+		const geometryPadP2 = new THREE.BoxGeometry(2, 0.5, 0.7);
+		const materialPadP2 = new THREE.MeshStandardMaterial({ color: 0x00ff00, roughness: 0.3 }); 
+		PadP2 = new THREE.Mesh(geometryPadP2, materialPadP2);
+		PadP2.position.set(0, 0.5, -8);
+
+
+
+		mesaGroup.add(paredIzq);
+		mesaGroup.add(paredDer);
+		mesaGroup.add(PadP1);
+		mesaGroup.add(PadP2);
+
+		scene.add(mesaGroup);
+
+		// 4. ADAPTABILIDAD DE CÁMARA
+		function adaptarCamara() {
+			if (width < height) {
+				camera.position.set(0, 10, 22); 
+			} else {
+				camera.position.set(0, 6, 14); 
+			}
+			camera.lookAt(0, 0, 0);
+		}
+
+		adaptarCamara();
+
+		// 5. BUCLE DE ANIMACIÓN
+		function animate()
+		{
+			requestAnimationFrame(animate);
+			renderer.render(scene, camera);
+		}
+		animate();
+
+		// 6. EVENTO RESPONSIVE
+		function handleResize() {
+			if (!wrapper) return;
+			width = wrapper.getBoundingClientRect().width;
+			height = wrapper.getBoundingClientRect().height;
+			
+			camera.aspect = width / height;
+			adaptarCamara();
+			camera.updateProjectionMatrix();
+			
+			renderer.setSize(width, height);
+		}
+
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	});
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div bind:this={wrapper} onmousemove={handleMouseMove}>
+<div bind:this={wrapper} onmousemove={handleMouseMove} onclick={requestLock}>
   <canvas bind:this={canvas}></canvas>
 </div>
 
@@ -127,5 +163,6 @@
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
+	cursor: pointer;
   }
 </style>
