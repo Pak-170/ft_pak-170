@@ -3,12 +3,11 @@ package web
 import (
 	"go_pakito/models"
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// GET /user/:id
+/* // GET /user/:id
 func (db *GormDB) getUserById(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
@@ -34,12 +33,12 @@ func (db *GormDB) getUsersInChat(c *gin.Context) {
 
 func (db *GormDB) home(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"title": "PRUEBA OAUTH"})
-}
+} */
 
 
 // - WS Handler----------------------------------------------------------------
 
-func (db *GormDB) handleWS(c *gin.Context) {
+func (h *Hub) handleWS(c *gin.Context) {
 	log.Printf("WEBSOCKET CONNECTED!!!!\n")
 	// Upgrading connection.
 	wsconn, err := upgrader.Upgrade(c.Writer, c.Request, nil) 
@@ -59,12 +58,12 @@ func (db *GormDB) handleWS(c *gin.Context) {
 
 	// Then, we check if the user exists
 	var queryUser models.User
-	err = db.DB.First(&queryUser, userID).Error
+	err = h.DB.First(&queryUser, userID).Error
 	if err != nil {
 		log.Printf("ERROR. USER %s DOESN'T EXISTS\n", userID)
 		return
 	}
 
-	var userws user = user{ws: wsconn, info: &queryUser, dbconn: db.DB}
-	userws.reader()
+	var user User = User{ws: wsconn, info: &queryUser}
+	h.reader(&user)
 }
