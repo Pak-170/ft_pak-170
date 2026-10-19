@@ -1,41 +1,51 @@
 package web
 
 import (
-	"fmt"
+	"go_pakito/dbp"
+	"log"
 	"gorm.io/gorm"
-	"go_pakito/models"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type GormDB struct {
-	DB *gorm.DB
-}
-// ------------------------ printers
 
-func printUser(w *http.ResponseWriter, user *models.User) {
-
-	fmt.Fprintf(*w, "ID: %d\nUSERNAME: %s\nALIAS:%s\n",
-		user.ID, user.Username, *(user.Alias))
-
+type	Hub struct {
+	DB		*gorm.DB //! crear un canal para gestionar concurrencia ???
+	chats	map[int][]*User
 }
 
-func printChat(w *http.ResponseWriter, chat *models.ChatView) {
-	fmt.Fprintf(*w, "%s: %s (%v)\n", chat.Username, chat.Msg, chat.SendTime)
-}
 
 // ------------------------
 
-func Web(db *GormDB) {
+func	initChats(hub *Hub) error {
+	var chats	map[int][]*User = make(map[int][]*User, 0)
+	chatIds, err := dbp.SelectChatIds(hub.DB, dbp.ALL)
+
+	if err != nil {
+		return err
+	}
+	for _, chatID := range chatIds {
+		chats[chatID] = make([]*User, 0)
+	}
+	hub.chats = chats
+	return err
+}
+
+func Web(db *gorm.DB) {
+	var hub	Hub = Hub{DB: db}
+
+	if err := initChats(&hub); err != nil {
+		log.Printf("ERROR INITIALIZING CHATS IDS: %v\n", err)
+		return
+	}
 
 	r := gin.Default()
-	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png") //!ruta relativa a la de ejecución ahora que no se usa docker aún, beware en el futuroooo
+	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png")
 
-	r.GET("/", db.home)
-	r.GET("/user/:id", db.getUserById)
-	r.GET("/chat/:id/users", db.getUsersInChat)
-	r.GET("/api/chat", db.handleWS)
+	// r.GET("/", db.home)
+	// r.GET("/user/:id", db.getUserById)
+	// r.GET("/chat/:id/users", db.getUsersInChat)
+	r.GET("/api/chat", hub.handleWS)
 
 	r.Run(":8080")
 }

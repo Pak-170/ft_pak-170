@@ -14,9 +14,11 @@ import (
 	"go_pakito/models"
 )
 
-// ------------------------ select by
+const ALL = -1
 
-func SelectUserByUsername(db *gorm.DB, username string) (models.User, error) {
+// SELECT ---------------------------------------------------------------------
+
+/* func SelectUserByUsername(db *gorm.DB, username string) (models.User, error) {
 	ctx := context.Background()
 	return gorm.G[models.User](db).Where("username = ?", username).First(ctx)
 }
@@ -25,10 +27,10 @@ func SelectChatByChatname(db *gorm.DB, chatname string) ([]models.ChatView, erro
 	ctx := context.Background()
 	fmt.Println(gorm.G[models.ChatView](db).First(ctx))
 	return gorm.G[models.ChatView](db).Where("name = ?", chatname).Find(ctx)
-}
+} */
 
 func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) { //! Optimizar las consultas
-	ctx := context.Background()
+	ctx := context.Background() //! investigar mejor esto de context
 	chatUserRelation, err := gorm.G[models.ChatUserRelation](db).Where("user = ?", userID).Find(ctx)
 
 	if err != nil {
@@ -46,8 +48,42 @@ func SelectAllChatsOfUser(db *gorm.DB, userID uint) ([]models.ChatView, error) {
 	return chatsMsgs, err
 }
 
+func	SelectChatIds(db *gorm.DB, userID int) ([]int, error) {
+	ctx := context.Background()
 
-// ------------------------
+	var	chatIds []int
+	var err error
+
+	if userID == ALL {
+		err = gorm.G[models.Chat](db).Select("id").Scan(ctx, &chatIds)
+	} else {
+		err = gorm.G[models.ChatUserRelation](db).Select("chat").Where("user = ?", userID).Scan(ctx, &chatIds)
+	}
+	return chatIds, err
+}
+
+// INSERT ---------------------------------------------------------------------
+
+func	InsertMsg(db *gorm.DB, msgInChat *models.ChatView) error {
+	ctx := context.Background()
+	var	msgInDB models.Message = models.Message{
+		ChatID: msgInChat.ChatID,
+		Msg: msgInChat.Msg,
+		Time: msgInChat.SendTime,
+	}
+	var	err error
+	err = gorm.G[models.User](db).Select("id").Where("username = ?", msgInChat.Username).Scan(ctx, &msgInDB.SenderID)
+	if err != nil {
+		log.Printf("ERROR CREATING THE MSG MODEL: %v\n", err)
+	}
+	err = gorm.G[models.Message](db).Create(ctx, &msgInDB)
+	if err != nil {
+		log.Printf("ERROR INSERTING INTO DB: %v\n", err)
+	}
+	return err
+}
+
+// ----------------------------------------------------------------------------
 
 func buildDSN() string {
 	user := os.Getenv("DB_USER")
