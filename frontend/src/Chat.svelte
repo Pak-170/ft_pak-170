@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte';
   import { messages, sendMessage } from '../client';
 
-  let username = 'yuri';
+  let username = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('username') ?? 'DefaultUser';
   let message = '';
   let selectedChatID: number | null = null;
   let messagesContainer: HTMLDivElement;

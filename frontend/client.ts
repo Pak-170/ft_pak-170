@@ -1,7 +1,10 @@
-const ws = new WebSocket(`/api/chat?user-id=1`);
+const params = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
+const userId = params.get('user-id') ?? '1';
+const ws = new WebSocket(`/api/chat?user-id=${userId}`);
 
 type ChatMessage = {
   ChatID: number;
+  UserID: number;
   Username: string;
   Msg: string;
   SendTime: string;
@@ -10,78 +13,21 @@ type ChatMessage = {
 export const messages: ChatMessage[] = [
   {
     ChatID: 1,
+	UserID: 1,
     Username: 'yuri',
     Msg: 'Olá a todos!',
     SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Olá a todos!',
-    SendTime: '2026-10-16T10:00:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'pepe',
-    Msg: 'Boas! Como está a correr o projeto?',
-    SendTime: '2026-10-16T10:01:00Z',
-  },
-  {
-    ChatID: 1,
-    Username: 'yuri',
-    Msg: 'Já consegui ligar o frontend ao WebSocket.',
-    SendTime: '2026-10-16T10:02:00Z',
   },
   {
     ChatID: 2,
-    Username: 'maria',
-    Msg: 'Alguém pode rever o meu código?',
-    SendTime: '2026-10-16T10:05:00Z',
-  },
-  {
-    ChatID: 2,
+	UserID: 1,
     Username: 'yuri',
-    Msg: 'Claro! Envia-me o link do repositório.',
-    SendTime: '2026-10-16T10:06:00Z',
+    Msg: 'Olá a todos!',
+    SendTime: '2026-10-16T10:00:00Z',
   },
   {
     ChatID: 3,
-    Username: 'carlos',
-    Msg: 'A reunião começa às 15:00.',
-    SendTime: '2026-10-16T10:10:00Z',
-  },
-  {
-    ChatID: 1,
+	UserID: 1,
     Username: 'yuri',
     Msg: 'Olá a todos!',
     SendTime: '2026-10-16T10:00:00Z',
@@ -122,6 +68,7 @@ export function sendMessage(chatID: number, username: string, message: string) {
 
   const data: ChatMessage = {
     ChatID: chatID,
+	UserID: Number(userId),
     Username: username,
     Msg: message,
     SendTime: new Date().toISOString(),
