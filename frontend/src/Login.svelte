@@ -102,6 +102,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow: hidden;
     background: radial-gradient(
       circle at center,
       var(--surface) 0%,

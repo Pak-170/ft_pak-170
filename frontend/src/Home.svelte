@@ -44,4 +44,5 @@
   });
 </script>
 
+<div class="scanlines"></div>
 <canvas bind:this={canvas}></canvas>

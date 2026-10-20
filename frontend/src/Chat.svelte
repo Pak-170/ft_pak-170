@@ -11,9 +11,11 @@
   let messagesContainer: HTMLDivElement;
 
   $: chatIDs = [...new Set($messages.map((msg) => msg.ChatID))];
-  $: selectedMessages = $messages.filter(
-    (msg) => msg.ChatID === selectedChatID,
-  );
+  $: selectedMessages = $messages
+    .filter((msg) => msg.ChatID === selectedChatID)
+    .sort(
+      (a, b) => new Date(a.SendTime).getTime() - new Date(b.SendTime).getTime(),
+    );
   $: if (selectedChatID === null && chatIDs.length > 0) {
     selectedChatID = chatIDs[0];
   }
@@ -66,7 +68,7 @@
 
       <div class="messages" bind:this={messagesContainer}>
         {#each selectedMessages as msg, i (`${msg.ChatID}-${msg.SendTime}-${i}`)}
-          <div class="message">
+          <div class="message" class:own-message={msg.Username === username}>
             <strong>{msg.Username}</strong>
             <div>{msg.Msg}</div>
             <small>{new Date(msg.SendTime).toLocaleTimeString()}</small>
@@ -163,19 +165,29 @@
   }
 
   .messages {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
+    padding: 12px 16px;
+
     border: 1px solid var(--green-dark);
     overflow-y: auto;
     box-shadow: inset 0 0 30px rgba(51, 255, 51, 0.025);
-  }
-
-  .messages {
     scrollbar-width: none;
   }
 
+  .message.own-message {
+    align-self: flex-end;
+  }
+
+  .message:not(.own-message) {
+    align-self: flex-start;
+  }
+
   .message {
-    padding: 15px;
+    max-width: 70%;
+    padding: 10px 15px;
     border-bottom: 1px dashed var(--green-dark);
     overflow-wrap: anywhere;
   }
@@ -195,6 +207,7 @@
   form input {
     width: 100%;
     padding: 15px;
+    margin-bottom: 5dvh;
     background: var(--black);
     border: 1px solid var(--green-dark);
     color: var(--green);
