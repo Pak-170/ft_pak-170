@@ -12,7 +12,7 @@
 	let height = 0;
 
 
-	//---------------------------------------------------------------------------------
+	//---------------------------- PREPARANDO COSAS ------------------------------------
 	
 	// gente, estos son los limites fisicos de la mesa para el Pad 1 (mi pad!)
 	const PAD1_MIN_X = -4.1;
@@ -37,15 +37,15 @@
 	const DISCO_RADIUS = 0.5;
 	let DiscoVelocity = { x: 0.08, z: 0.12 };
 
-	// Resetear cuando hay gol
-	function resetDisco(scorer: 'p1' | 'p2'): void //Retorno explicito (: void)
+	// funcio npara resetear cuando hay gol
+	function resetDisco(scorer: 'p1' | 'p2')
 	{
 		if (!Disco)
 		{
-			return;
+			return ;
 		}
 
-		// Vuelve al centro de la plaza
+		// Vuelve al centro de la mesa
 		Disco.position.set(0, 0.35, 0);
 
 		// Saque en direccion al perdedor que acaba de recibir el gol
@@ -91,11 +91,11 @@
 	}
 
 	onMount(() =>
-	{
+	{	// adaptar juego a pagina abierta
 		width = wrapper.getBoundingClientRect().width;
 		height = wrapper.getBoundingClientRect().height;
 
-		// 1. ESCENA Y RENDERIZADOR (El plato de juego)
+		// 1. ESCENA Y RENDERIZADOR (el plato de juego)
 		const scene = new THREE.Scene();
 		const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
 		
@@ -103,8 +103,8 @@
 		renderer.setSize(width, height);
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-		// 2. ILUMINACION (Que no estemos a oscuras como en el tunel de Aravaca)
-		const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); 
+		// 2. ILUMINACION
+		const ambientLight = new THREE.AmbientLight(0xffffff, 2); 
 		scene.add(ambientLight);
 		
 		const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -123,7 +123,7 @@
 		// Material para las vigas metalicas de los lados
 		const materialBorde = new THREE.MeshStandardMaterial({ color: 0x8a9597, metalness: 0.4, roughness: 0.5 });
 
-		// 3.2 Las paredes de acero donde rebota la vida
+		// 3.2 Las paredes de acero donde rebota el disco
 		const geometryParedLarga = new THREE.BoxGeometry(1, 1.5, 20);
 		
 		const paredIzq = new THREE.Mesh(geometryParedLarga, materialBorde);
@@ -150,13 +150,13 @@
 		Disco = new THREE.Mesh(geometryDisco, materialDisco);
 		Disco.position.set(0, 0.35, 0);
 
-		// Montamos todo el mambo dentro del grupo
+		// Añadir todos lo chachrros dentro del grupo qeu define la mesa
 		mesaGroup.add(paredIzq);
 		mesaGroup.add(paredDer);
 		mesaGroup.add(PadP1);
 		mesaGroup.add(PadP2);
 		mesaGroup.add(Disco);
-
+		// anadir todos los cacharrso agrupados en el MesaGroup a la escena para uqe sea todo visible
 		scene.add(mesaGroup);
 
 		// 4. ADAPTABILIDAD DE CAMARA (Si jugamos en el movil o en la pantalla grande)
@@ -176,14 +176,15 @@
 		adaptarCamara();
 
 		// 5. BUCLE DE ANIMACION Y FISICAS (El cuore del programa)
-		function animate() {
-			requestAnimationFrame(animate);
+		function animate()
+		{
+			requestAnimationFrame(animate); // Esa linea es el motor del bucle infinito de animacion (el render loop)
 
 			if (Disco && PadP1 && PadP2)
 			{
 				// Movemos el disco
 				Disco.position.x += DiscoVelocity.x;
-				Disco.position.z += DiscoVelocity.z;
+				Disco.position.z += DiscoVelocity.z; // interesante si se le suma += 0.008
 
 				// Rebote en las paredes de aluminio (Invertimos el vector X)
 				const limitX = 4.75;
