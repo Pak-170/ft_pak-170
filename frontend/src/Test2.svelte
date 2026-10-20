@@ -1,3 +1,5 @@
+
+<!-- docker compose up --build frontend -->
 <script lang="ts">
 	import * as THREE from 'three';
 	import { onMount } from 'svelte';
@@ -19,8 +21,8 @@
 	// Límites físicos directos del tablero del pad 2
 	const PAD2_MIN_X = -4.1;
 	const PAD2_MAX_X = 4.1;
-	const PAD2_MIN_Z = 5.0; // Línea central
-	const PAD2_MAX_Z = -9.5; // Fondo de pista (portería propia)
+	const PAD2_MIN_Z = -9.5; // Línea central
+	const PAD2_MAX_Z = -5; // Fondo de pista (portería propia)
 
 
 	// Sensibilidad del movimiento (Ajusta este valor a tu gusto)
@@ -29,17 +31,26 @@
 	let PadP1: THREE.Mesh | null = null;
 	let PadP2: THREE.Mesh | null = null;
 
-	function handleMouseMove(event: MouseEvent) {
+	function handleMouseMove(event: MouseEvent)
+	{
 		// Solo movemos el pad si el puntero está bloqueado/atrapado dentro del canvas
-		if (document.pointerLockElement === canvas && PadP1) {
+		if (document.pointerLockElement === canvas && PadP1 && !event.ctrlKey)
+		{
 			// Sumamos el desplazamiento del ratón directamente a las coordenadas 3D del Pad
 			let nextX1 = PadP1.position.x + event.movementX * SENSITIVITY;
 			let nextZ1 = PadP1.position.z + event.movementY * SENSITIVITY;
-
-
 			// Límites directos e infranqueables (Clamp)
 			PadP1.position.x = Math.max(PAD1_MIN_X, Math.min(PAD1_MAX_X, nextX1));
 			PadP1.position.z = Math.max(PAD1_MIN_Z, Math.min(PAD1_MAX_Z, nextZ1));
+		}
+		if (event.ctrlKey && PadP2)
+		{
+			// Sumamos el desplazamiento del ratón directamente a las coordenadas 3D del Pad
+			let nextX2 = PadP2.position.x - event.movementX * SENSITIVITY;
+			let nextZ2 = PadP2.position.z - event.movementY * SENSITIVITY;
+			// Límites directos e infranqueables (Clamp)
+			PadP2.position.x = Math.max(PAD2_MIN_X, Math.min(PAD2_MAX_X, nextX2));
+			PadP2.position.z = Math.max(PAD2_MIN_Z, Math.min(PAD2_MAX_Z, nextZ2));
 		}
 	}
 
