@@ -12,9 +12,9 @@
 </script>
 
 <nav>
-  <a href="#/">Home</a>
-  <a href="#/login">Login</a>
-  <a href="#/chat">Chat</a>
+  <a href="#/">HOME</a>
+  <a href="#/login">LOGIN</a>
+  <a href="#/chat">CHAT</a>
 </nav>
 
 <Router {routes} />
