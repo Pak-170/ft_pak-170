@@ -1,9 +1,6 @@
 import * as THREE from 'three';
 
-let width = 0;
-let height = 0;
 
-//---------------------------- PREPARANDO COSAS ------------------------------------
 
 export class Game
 {
@@ -25,11 +22,14 @@ export class Game
 	PadP1?: THREE.Mesh;
 	PadP2?: THREE.Mesh; // es lo mismo que abajo!
 	Disco: THREE.Mesh | undefined; // esto es para intaciar una variable de tipo (tenemos que darle la posibilidad de que sea undefined para instanciarla al principio)
-
+	renderer?: THREE.WebGLRenderer;
 	// Fisicas del disco, mas rapido que el metro de Madrid a las 8 de la manana
 	DISCO_RADIUS = 0.5;
 	DiscoVelocity = {x: 0.08, z: 0.12};
 };
+
+
+
 
 export function handleMouseMove(game: Game, event: MouseEvent, canvas: HTMLCanvasElement)
 {
@@ -54,42 +54,20 @@ export function handleMouseMove(game: Game, event: MouseEvent, canvas: HTMLCanva
 	}
 }
 
-// funcio npara resetear cuando hay gol
-function resetDisco(game: Game, scorer: "p1" | "p2")
-{
-	if (!game.Disco)
-	{
-		return ;
-	}
 
-	// Vuelve al centro de la mesa
-	game.Disco.position.set(0, 0.35, 0);
-5
-	// Saque en direccion al perdedor que acaba de recibir el gol
-	game.DiscoVelocity.x = (Math.random() - 0.5) * 0.1;
-
-	if (scorer === 'p1')
-	{
-		game.DiscoVelocity.z = -0.12;
-	}
-	else
-	{
-		game.DiscoVelocity.z = 0.12;
-	}
-}
 
 export function initGame(game: Game, canvas: HTMLCanvasElement, wrapper: HTMLDivElement)
 {
 	// adaptar juego a pagina abierta
-	width = wrapper.getBoundingClientRect().width;
-	height = wrapper.getBoundingClientRect().height;
+	let width = wrapper.getBoundingClientRect().width;
+	let height = wrapper.getBoundingClientRect().height;
 
 	// 1. ESCENA Y RENDERIZADOR (el plato de juego)
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
 	
-	const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-	renderer.setSize(width, height);
+	game.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+	game.renderer.setSize(width, height);
 
 	// 2. ILUMINACION
 	const ambientLight = new THREE.AmbientLight(0xffffff, 2); 
@@ -152,54 +130,90 @@ export function initGame(game: Game, canvas: HTMLCanvasElement, wrapper: HTMLDiv
 
 	camera.lookAt(0, 0, 0);
 
-	// 5. BUCLE DE ANIMACION Y FISICAS (El cuore del programa)
-	let animate = () =>
-	{
-		requestAnimationFrame(animate); // Esa linea es el motor del bucle infinito de animacion (el render loop)
-
-		if (game.Disco && game.PadP1 && game.PadP2)
-		{
-			// Movemos el disco
-			game.Disco.position.x += game.DiscoVelocity.x;
-			game.Disco.position.z += game.DiscoVelocity.z; // interesante si se le suma += 0.008
-
-			// Rebote en las paredes de aluminio (Invertimos el vector X)
-			const limitX = 4.75;
-			if (game.Disco.position.x > limitX || game.Disco.position.x < -limitX)
-			{
-				game.DiscoVelocity.x *= -1; // Pum! Rebota que te criaste
-				game.Disco.position.x = Math.sign(game.Disco.position.x) * limitX; // Para no quedarse enganchado
-			}
-
-			// Colision con Pad 1
-			const dx1 = game.Disco.position.x - game.PadP1.position.x;
-			const dz1 = game.Disco.position.z - game.PadP1.position.z;
-			if (Math.abs(dx1) < 1.3 && Math.abs(dz1) < 0.5)
-			{
-				game.DiscoVelocity.z = -Math.abs(game.DiscoVelocity.z); // Sale disparado hacia el rival
-				game.DiscoVelocity.x += dx1 * 0.05; // Le damos angulo segun la esquina del golpeo
-			}
-
-			// Colision con Pad 2 (El rival responde)
-			const dx2 = game.Disco.position.x - game.PadP2.position.x;
-			const dz2 = game.Disco.position.z - game.PadP2.position.z;
-			if (Math.abs(dx2) < 1.3 && Math.abs(dz2) < 0.5)
-			{
-				game.DiscoVelocity.z = Math.abs(game.DiscoVelocity.z); // Vuelve hacia nosotros
-				game.DiscoVelocity.x += dx2 * 0.05;
-			}
-
-			// Gol! (Si cruza el fondo de la pista)
-			if (game.Disco.position.z > 10.2)
-			{
-				resetDisco(game, "p2"); // Gol del rival!
-			}
-			else if (game.Disco.position.z < -10.2)
-			{
-				resetDisco(game, 'p1'); // Gol nuestro ole!
-			}
-		}
-		renderer.render(scene, camera);
-	}
-	animate();
+	animate(game, scene, camera);
 };
+
+
+
+
+// funcio npara resetear cuando hay gol
+function resetDisco(game: Game, scorer: "p1" | "p2")
+{
+	if (!game.Disco)
+	{
+		return ;
+	}
+
+	// Vuelve al centro de la mesa
+	game.Disco.position.set(0, 0.35, 0);
+
+	// Saque en direccion al perdedor que acaba de recibir el gol
+	game.DiscoVelocity.x = (Math.random() - 0.5) * 0.1;
+
+	if (scorer === 'p1')
+	{
+		game.DiscoVelocity.z = -0.12;
+	}
+	else
+	{
+		game.DiscoVelocity.z = 0.12;
+	}
+}
+
+
+
+
+// 5. BUCLE DE ANIMACION Y FISICAS (El cuore del programa)
+function animate(game: Game, scene: THREE.Scene, camera: THREE.Camera)
+{
+	requestAnimationFrame(() => 
+		{
+			animate(game, scene, camera);
+		}
+	); // Esa linea es el motor del bucle infinito de animacion (el render loop)
+
+	if (game.Disco && game.PadP1 && game.PadP2)
+	{
+		// Movemos el disco
+		game.Disco.position.x += game.DiscoVelocity.x;
+		game.Disco.position.z += game.DiscoVelocity.z; // interesante si se le suma += 0.008
+
+		// Rebote en las paredes de aluminio (Invertimos el vector X)
+		const limitX = 4.75;
+		if (game.Disco.position.x > limitX || game.Disco.position.x < -limitX)
+		{
+			game.DiscoVelocity.x *= -1; // Pum! Rebota que te criaste
+			game.Disco.position.x = Math.sign(game.Disco.position.x) * limitX; // Para no quedarse enganchado
+		}
+
+		// Colision con Pad 1
+		const dx1 = game.Disco.position.x - game.PadP1.position.x;
+		const dz1 = game.Disco.position.z - game.PadP1.position.z;
+		if (Math.abs(dx1) < 1.3 && Math.abs(dz1) < 0.5)
+		{
+			game.DiscoVelocity.z = -Math.abs(game.DiscoVelocity.z); // Sale disparado hacia el rival
+			game.DiscoVelocity.x += dx1 * 0.05; // Le damos angulo segun la esquina del golpeo
+		}
+
+		// Colision con Pad 2 (El rival responde)
+		const dx2 = game.Disco.position.x - game.PadP2.position.x;
+		const dz2 = game.Disco.position.z - game.PadP2.position.z;
+		if (Math.abs(dx2) < 1.3 && Math.abs(dz2) < 0.5)
+		{
+			game.DiscoVelocity.z = Math.abs(game.DiscoVelocity.z); // Vuelve hacia nosotros
+			game.DiscoVelocity.x += dx2 * 0.05;
+		}
+		
+		// Gol! (Si cruza el fondo de la pista)
+		if (game.Disco.position.z > 10.2)
+		{
+			resetDisco(game, "p2"); // Gol del rival!
+		}
+		else if (game.Disco.position.z < -10.2)
+		{
+			resetDisco(game, 'p1'); // Gol nuestro ole!
+		}
+	}
+	if (game.renderer)
+		game.renderer.render(scene, camera);
+}
