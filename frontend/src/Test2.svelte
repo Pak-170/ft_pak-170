@@ -1,14 +1,14 @@
 <!-- docker compose up --build frontend -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-    import { handleMouseMove, initGame } from './game/game';
+    import { Game, handleMouseMove, initGame } from './game/game';
 
 	let canvas: HTMLCanvasElement;
 	let wrapper: HTMLDivElement;
 
 	function handleMouseMoveOuter(event: MouseEvent)
 	{
-		handleMouseMove(event, canvas);
+		handleMouseMove(game, event, canvas);
 	}
 	// Click en el lienzo y fuera la frecha del raton. Magic!
 	function requestLock()
@@ -16,9 +16,11 @@
 		canvas.requestPointerLock();
 	}
 
+	let game: Game = new Game();
+
 	onMount(() =>
 	{	// adaptar juego a pagina abierta
-		initGame(canvas, wrapper);
+		initGame(game, canvas, wrapper);
 	});
 </script>
 
