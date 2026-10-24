@@ -1,18 +1,19 @@
-# 1. Register
-curl -i -X POST localhost:8080/api/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"juana","password":"12345678","alias":"juanita"}'
+# Registro
+curl -i -c cookies.txt -X POST localhost:8080/api/register \
+  -d "username=ana&password=12345678&alias=anita"
 
-# 2. Login (-c saves cookies at cookies.txt)
-curl -i -c cookies.txt -X POST localhost:8080/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"juana","password":"12345678"}'
-
-# 3. Protected path (-b sends the cookie)
+# Sesión tras el registro
 curl -i -b cookies.txt localhost:8080/api/me
 
-# 4. Logout
+# Logout y comprobación (204 y luego 401)
 curl -i -b cookies.txt -X POST localhost:8080/api/logout
+curl -i -b cookies.txt localhost:8080/api/me
 
-# 5. Again /api/me: must return 401
+# Login
+curl -i -c cookies.txt -X POST localhost:8080/api/login \
+  -d "username=ana&password=12345678"
+
+# Sesión, logout final y comprobación (200, 204, 401)
+curl -i -b cookies.txt localhost:8080/api/me
+curl -i -b cookies.txt -X POST localhost:8080/api/logout
 curl -i -b cookies.txt localhost:8080/api/me
