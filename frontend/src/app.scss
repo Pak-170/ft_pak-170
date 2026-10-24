@@ -17,10 +17,10 @@
   --scanline: rgba(51, 255, 51, 0.035);
   --scanline-glow: rgba(51, 255, 51, 0.08);
   --crt-effectOUT: rgba(51, 255, 51, 0.015);
-  --crt-effectIN: rgba(51, 255, 51, 0.045);
+  --crt-effectIN: rgba(0, 186, 0, 0.123);
 
   --terminal-glow: rgba(51, 255, 51, 0.12);
-  --text-glow: rgba(51, 255, 51, 0.3);
+  --text-glow: rgba(0, 201, 0, 0.112);
 
   --terminal-border-width: 1px;
   --terminal-radius: 0px;
@@ -61,14 +61,15 @@ body {
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.1) 0px,
-    rgba(0, 0, 0, 0.1) 2px,
-    var(--scanline) 2px,
-    var(--scanline) 3px,
-    transparent 3px,
-    transparent 4px
+    rgba(0, 255, 0, 0.301) 0px,
+    rgba(0, 0, 0, 0.454) 2px,
+    var(--scanline) 0.2px,
+    var(--scanline) 0.9px,
+    transparent 2px,
+    transparent 1px
   );
   box-shadow:
+  
     inset 0 0 80px var(--scanline-glow),
     inset 0 0 180px var(--scanline);
   z-index: 9999;
@@ -87,15 +88,31 @@ body {
     transparent 100%
   );
   background-size: 100% 200%;
-  animation: crt-sweep 8s linear infinite;
+  animation: crt-sweep 0.060s linear infinite;
+}
+
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    transparent 0%,
+    var(--crt-effectOUT) 45%,
+    var(--crt-effectIN) 0%,
+    var(--crt-effectOUT) 55%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: crt-sweep 5s linear infinite;
 }
 
 @keyframes crt-sweep {
   from {
-    background-position: 0 -100%;
+    background-position: 0 100%;
   }
   to {
-    background-position: 0 100%;
+    background-position: 0 -100%;
   }
 }
 
