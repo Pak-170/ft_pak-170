@@ -37,7 +37,7 @@ func (c *Client) readFromWS(ctx context.Context) {
 		err := c.ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("ERROR READING JSON FROM WS: %v\n", err)
-			//break
+			break
 		}
 		c.hub.broadcastChan <- &msg
 		dbp.InsertMsg(ctx, c.hub.DB, &msg)
