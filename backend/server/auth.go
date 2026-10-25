@@ -1,4 +1,4 @@
-package web
+package server
 
 import (
 	"crypto/rand"
@@ -121,7 +121,7 @@ func Logout(db *gorm.DB) gin.HandlerFunc {
 }
 
 func startSession(c *gin.Context, db *gorm.DB, userID uint) error {
-	token, err := newSession(db, UserID)
+	token, err := newSession(db, userID)
 	if err != nil {
 		return err
 	}
