@@ -1,18 +1,99 @@
 <script lang="ts">
-  let email = $state('');
+  import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
+  import { currentUser } from '../client';
+
   let password = $state('');
   let username = $state('');
   let register = $state(false);
   let confPassword = $state('');
+  let loading = $state(false);
+  let errorMessage = $state('');
+  let successMessage = $state('');
+  let passwordsDoNotMatch = $derived(
+  register &&
+  confPassword.length > 0 &&
+  password !== confPassword
+);
+$effect(() => {
+  $passwordMismatch = passwordsDoNotMatch;
+});
 
-  function submit(e: Event) {
+  async function submit(e: Event) {
     e.preventDefault();
 
-    if (register) {
-      if (password !== confPassword) return;
-      console.log('Register:', username, email, password);
-    } else {
-      console.log('Login:', email, password);
+    errorMessage = '';
+    successMessage = '';
+	$loginHasError = false;
+
+    if (register && password !== confPassword) {
+      errorMessage = 'ACCESS CODES DO NOT MATCH';
+	  $loginHasError = true;
+      return;
+    }
+
+    loading = true;
+
+    try {
+      const endpoint = register ? '/api/register' : '/api/login';
+
+      const body = {
+        username,
+        password,
+        ...(register ? { alias: null } : {}),
+      };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      const responseText = await response.text();
+
+      let data: { error?: string; message?: string } = {};
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        errorMessage = `SERVER ERROR (${response.status}): ${responseText}`;
+		$loginHasError = true;
+        return;
+      }
+
+      if (!response.ok) {
+        errorMessage = data.error || 'AUTHENTICATION FAILED';
+		$loginHasError = true;
+        return;
+      }
+
+      successMessage = register
+        ? 'ACCOUNT CREATED SUCCESSFULLY'
+        : 'LOGIN SUCCESSFUL';
+
+      const meResponse = await fetch('/api/me', {
+        credentials: 'include',
+      });
+
+      if (!meResponse.ok) {
+        errorMessage = 'SESSION CREATED, BUT USER COULD NOT BE LOADED';
+		$loginHasError = true;
+        return;
+      }
+
+      const user = await meResponse.json();
+      currentUser.set(user);
+
+      console.log('Authenticated user:', user);
+
+      window.location.href = '/home';
+    } catch (error) {
+      console.error('Authentication error:', error);
+      errorMessage = 'CONNECTION ERROR';
+	  $loginHasError = true;
+    } finally {
+      loading = false;
     }
   }
 </script>
@@ -33,22 +114,12 @@
     </div>
     <form onsubmit={submit}>
       <label>
-        {#if register}
-          <span>OPERATOR ID</span>
-          <input
-            type="text"
-            placeholder="USERNAME"
-            bind:value={username}
-            autocomplete="nickname"
-            required
-          />
-        {/if}
-        <span>{register ? 'NETWORK ID' : 'IDENTIFICATION'}</span>
+        <span>OPERATOR ID</span>
         <input
-          type="email"
-          placeholder="USER@NETWORK"
-          bind:value={email}
-          autocomplete="email"
+          type="text"
+          placeholder="USERNAME"
+          bind:value={username}
+          autocomplete="username"
           required
         />
       </label>
@@ -79,11 +150,28 @@
           {/if}
         {/if}
       </label>
-      <button class="submit" type="submit">
-        {register ? 'CREATE ACCOUNT' : 'LOG IN'}
+      <button class="submit" type="submit" disabled={loading}>
+        {loading ? 'CONNECTING...' : register ? 'CREATE ACCOUNT' : 'LOG IN'}
       </button>
+      {#if errorMessage}
+        <span class="passconfirm">{errorMessage}</span>
+      {/if}
+
+      {#if successMessage}
+        <span class="passconfirm">{successMessage}</span>
+      {/if}
     </form>
-    <button class="switch" type="button" onclick={() => (register = !register)}>
+    <button
+      class="switch"
+      type="button"
+      onclick={() => {
+        register = !register;
+        errorMessage = '';
+        successMessage = '';
+        confPassword = '';
+		$loginHasError = false;
+      }}
+    >
       {register ? '>> EXISTING USER // LOGIN' : '>> NEW USER // REGISTER'}
     </button>
     <div class="footer">
@@ -94,23 +182,26 @@
 </div>
 
 <style lang="scss">
-  .login-page {
-    position: relative;
-    width: 100%;
-    height: 100dvh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    overflow: hidden;
-    background: radial-gradient(
-      circle at center,
-      var(--surface) 0%,
-      var(--black) 70%
-    );
-    color: var(--green);
-    text-shadow: 0 0 4px var(--text-glow);
-  }
+
+.login-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: auto;
+  background: radial-gradient(
+    circle at center,
+    var(--surface) 0%,
+    var(--black) 70%
+  );
+  color: var(--green);
+  text-shadow: 0 0 4px var(--text-glow);
+}
+
 
   .login-box {
     position: relative;
@@ -291,16 +382,19 @@
   }
 
   @media (max-width: 550px) {
-    .login-page {
-      padding: 15px;
-    }
-    .login-box {
-      width: 100%;
-      padding: 24px;
-      box-shadow:
-        6px 6px 0 var(--black),
-        9px 9px 0 var(--green-dark),
-        0 0 25px var(--terminal-glow);
-    }
+  .login-page {
+    top: 7%;
+    left: 5%;
+    width: 79%;
+    height: 81%;
+    padding: 10px;
   }
+
+  .login-box {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 16px;
+  }
+}
 </style>

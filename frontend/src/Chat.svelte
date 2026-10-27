@@ -1,15 +1,21 @@
 <script lang="ts">
-  import { tick } from 'svelte';
-  import { messages, sendMessage } from '../client';
+  import { onMount, tick } from 'svelte';
+  import {
+    messages,
+    currentUser,
+    connectWebSocket,
+    sendMessage,
+  } from '../client';
 
-  let username =
-    new URLSearchParams(window.location.hash.split('?')[1] ?? '').get(
-      'username',
-    ) ?? 'DefaultUser';
   let message = '';
   let selectedChatID: number | null = null;
   let messagesContainer: HTMLDivElement;
 
+  onMount(() => {
+    connectWebSocket();
+  });
+
+  $: username = $currentUser?.username ?? '';
   $: chatIDs = [...new Set($messages.map((msg) => msg.ChatID))];
   $: selectedMessages = $messages
     .filter((msg) => msg.ChatID === selectedChatID)
@@ -20,7 +26,7 @@
     selectedChatID = chatIDs[0];
   }
   function submit() {
-    if (!message.trim() || selectedChatID === null) return;
+    if (!message.trim() || selectedChatID === null || !username) return;
 
     sendMessage(selectedChatID, username, message.trim());
     message = '';
@@ -46,6 +52,7 @@
 
 <div class="scanlines"></div>
 
+<div class="monitor-content">
 <div class="chat-layout">
   <aside class="sidebar">
     <h2>Chats</h2>
@@ -95,6 +102,7 @@
     {/if}
   </div>
 </div>
+</div>
 
 <style lang="scss">
   .message small {
@@ -103,13 +111,16 @@
     color: var(--green-dark);
   }
 
-  .chat-layout {
-    display: flex;
-    width: 100%;
-    height: 100vh;
-    background: var(--black);
-    color: var(--green);
-  }
+.chat-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--black);
+  color: var(--green);
+}
 
   .sidebar {
     min-width: 150px;
