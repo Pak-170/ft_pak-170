@@ -87,7 +87,7 @@ $effect(() => {
 
       console.log('Authenticated user:', user);
 
-      window.location.href = '/home';
+      window.location.href = '#/';
     } catch (error) {
       console.error('Authentication error:', error);
       errorMessage = 'CONNECTION ERROR';
