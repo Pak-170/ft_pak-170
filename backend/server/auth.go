@@ -46,7 +46,7 @@ func newSession(db *gorm.DB, userID uint) (string, error) {
 	return token, db.Create(&s).Error
 }
 
-func Register(db *gorm.DB) gin.HandlerFunc {
+func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var cred credentials
 		if err := c.ShouldBind(&cred); err != nil {
@@ -78,7 +78,7 @@ func Register(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno"})
 			return
 		}
-
+		h.clients[user.ID] = newClient(h, nil, &user)
 		if err := startSession(c, db, user.ID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "usuario creado, pero falló el inicio de sesión"})
 			return
