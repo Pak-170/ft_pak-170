@@ -20,7 +20,6 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png")
 
-	r.GET("/api/chat", hub.handleWS)
 
 	// --- autentication (publics) ---
 	r.POST("/api/register", Register(db))
@@ -37,6 +36,10 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 			}
 			c.JSON(http.StatusOK, u)
 		})
+		protected.POST("/chats", hub.createChat)
+		protected.GET("/chats", hub.sendChats)
+		protected.GET("/users", hub.sendUsers)
+		protected.GET("/chat", hub.handleWS)
 		// Chat endpoints go in here
 	}
 

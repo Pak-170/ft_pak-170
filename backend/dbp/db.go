@@ -15,44 +15,54 @@ import (
 	"go_pakito/models"
 )
 
+
 const ALL = -1
 const DB_TIMEOUT = 5
 
+
 // SELECT ---------------------------------------------------------------------
 
-/* func SelectUserByUsername(db *gorm.DB, username string) (models.User, error) {
-	ctx := context.Background()
-	return gorm.G[models.User](db).Where("username = ?", username).First(ctx)
-}
-
-func SelectChatByChatname(db *gorm.DB, chatname string) ([]models.ChatView, error) {
-	ctx := context.Background()
-	fmt.Println(gorm.G[models.ChatView](db).First(ctx))
-	return gorm.G[models.ChatView](db).Where("name = ?", chatname).Find(ctx)
-} */
-
-func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]models.ChatView, error) { //! Optimizar las consultas
-	chatUserRelation, err := gorm.G[models.ChatUserRelation](db).Where("user = ?", userID).Find(ctx)
+func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]models.Chat, []models.ChatView, error) { //! Optimizar las consultas
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
 
+	chatUserRelation, err := gorm.G[models.ChatUserRelation](db).Where("user = ?", userID).Find(ctx)
+
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var chatsMsgs []models.ChatView
+	var chatsMsgs	[]models.ChatView
+	var chats		[]models.Chat
 	for _, chatUserIsIn := range chatUserRelation {
+		//1. Get the chat info:
+		chatInfo, err := gorm.G[models.Chat](db).Where("id = ?", chatUserIsIn.ChatID).First(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		//2. Get the list of users inside said chat:
+		usersInChat, err := gorm.G[models.User](db).Raw("SELECT u.id, u.username, u.alias FROM users AS u JOIN chat_user as c ON c.user = u.id WHERE c.chat = ?", chatUserIsIn.ChatID).Find(ctx)
+		if err != nil {
+			return nil, nil, err
+		}
+		chatInfo.Participants = usersInChat
+
+		//3. Append the chatInfo we got to the chats slice we will send to the frontend
+		chats = append(chats, chatInfo)
+
+		//4. Find the msgs of that chat to send to the frontend as prior messages.
 		oneChatMsgs, err := gorm.G[models.ChatView](db).Where("chat_id = ?", chatUserIsIn.ChatID).Find(ctxWithTimeout)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		chatsMsgs = append(chatsMsgs, oneChatMsgs...)
 	}
-	return chatsMsgs, err
+	return chats, chatsMsgs, err
 }
 
-func	SelectChatIds(ctx context.Context, db *gorm.DB, userID int) ([]int, error) {
-	var	chatIds []int
+func	SelectChatIds(ctx context.Context, db *gorm.DB, userID int) ([]uint, error) {
+	var	chatIds []uint
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
 	var err error
@@ -65,6 +75,42 @@ func	SelectChatIds(ctx context.Context, db *gorm.DB, userID int) ([]int, error) 
 	return chatIds, err
 }
 
+func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	tableRegisters, err := gorm.G[T](db).Find(ctxWithTimeout)
+
+	if err != nil {
+		return nil, err
+	}
+	return tableRegisters, err
+}
+
+/* func	SelectChats(ctx context.Context, db *gorm.DB) ([]models.Chat, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	chats, err := gorm.G[models.Chat](db).Find(ctxWithTimeout)
+
+	if err != nil {
+		return nil, err
+	}
+	return chats, err
+}
+
+func	SelectUsers(ctx context.Context, db *gorm.DB) ([]models.User, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	users, err := gorm.G[models.User](db).Find(ctxWithTimeout)
+
+	if err != nil {
+		return nil, err
+	}
+	return users, err
+}
+ */
 // INSERT ---------------------------------------------------------------------
 
 func	InsertMsg(ctx context.Context, db *gorm.DB, msgInChat *models.ChatView) error {
@@ -88,6 +134,27 @@ func	InsertMsg(ctx context.Context, db *gorm.DB, msgInChat *models.ChatView) err
 	return err
 }
 
+func InsertUserInChat(ctx context.Context, db *gorm.DB, chat uint, user uint) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+	var userInChat models.ChatUserRelation = models.ChatUserRelation{
+		ChatID: chat,
+		UserID: user,
+	}
+	return gorm.G[models.ChatUserRelation](db).Create(ctxWithTimeout, &userInChat)
+}
+
+func InsertChat(ctx context.Context, db *gorm.DB, chatName string, owner uint) (uint, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+	var chat models.Chat = models.Chat{
+		ID: 0,
+		Name: chatName,
+		Owner: owner,
+	}
+	err := gorm.G[models.Chat](db).Create(ctxWithTimeout, &chat)
+	return chat.ID, err
+}
 // ----------------------------------------------------------------------------
 
 func buildDSN() string {

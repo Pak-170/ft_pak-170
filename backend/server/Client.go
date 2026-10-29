@@ -14,15 +14,17 @@ type Client struct {
 	ws		*websocket.Conn
 	info	*models.User
 
-	send chan *models.ChatView
+	sendMsg			chan *models.ChatView
+	sendChatInfo	chan *models.Chat
 }
 
 func newClient(h *Hub, ws *websocket.Conn, info *models.User) Client {
 	return Client{
-		hub:	h,
-		ws:		ws,
-		info:	info,
-		send:	make(chan *models.ChatView),
+		hub:			h,
+		ws:				ws,
+		info:			info,
+		sendMsg:		make(chan *models.ChatView),
+		sendChatInfo:	make(chan *models.Chat),
 	}
 }
 
@@ -39,6 +41,7 @@ func (c *Client) readFromWS(ctx context.Context) {
 			log.Printf("ERROR READING JSON FROM WS: %v\n", err)
 			break
 		}
+		log.Printf("(%v)->>>> msg received: %v.\n", c.info.ID, msg)
 		c.hub.broadcastChan <- &msg
 		dbp.InsertMsg(ctx, c.hub.DB, &msg)
 	}
@@ -54,12 +57,18 @@ func (c *Client) writeToWS(ctx context.Context) {
 		case <-ctx.Done():
 			log.Println("CTX DONE EN WRITEPUMP")
 			return
-		case msg, ok := <-c.send: // hemos recibimos un msg en el canal send
+		case msg, ok := <-c.sendMsg: // hemos recibimos un msg en el canal send
 			if !ok {
 				log.Println("User closed connection")
 				return
 			}
 			err := c.ws.WriteJSON(msg)
+			if err != nil {
+				log.Printf("WS error: %v\n", err)
+				return
+			}
+		case chatInfo := <-c.sendChatInfo:
+			err := c.ws.WriteJSON(chatInfo)
 			if err != nil {
 				log.Printf("WS error: %v\n", err)
 				return

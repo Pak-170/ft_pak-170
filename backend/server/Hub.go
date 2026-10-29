@@ -5,34 +5,45 @@ import (
 	"go_pakito/dbp"
 	"go_pakito/models"
 	"log"
-
 	"gorm.io/gorm"
 )
 
+
+type CreateChatData struct {
+	InfoType	string	`json:"infoType"`
+	Name		string	`json:"name"`
+	ChatType	string	`json:"type"`
+	UserIDs		[]uint	`json:"userIDs"`
+}
+
 type Hub struct { // Es el único que puede gestionar y trabajar realmente con los elementos compartidos entre clientes
 	DB				*gorm.DB
-	chats			map[int][]*Client
+	chats			map[uint][]*Client
+	clients			map[uint]*Client
 
 	join			chan *Client
 	leave			chan *Client
+	newChat			chan *models.Chat
 	broadcastChan	chan *models.ChatView
 }
 
 func newHub(db *gorm.DB) Hub {
 	return Hub{
 		DB:				db,
-		chats:			make(map[int][]*Client),
+		chats:			make(map[uint][]*Client),
+		clients:		make(map[uint]*Client),
 		join:			make(chan *Client),
 		leave:			make(chan *Client),
+		newChat:		make(chan *models.Chat),
 		broadcastChan:	make(chan *models.ChatView),
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-func (h *Hub) removeUser(ctx context.Context, user *Client) {
+func (h *Hub) removeClient(ctx context.Context, client *Client) {
 
-	chatIds, err := dbp.SelectChatIds(ctx, h.DB, int(user.info.ID))
+	chatIds, err := dbp.SelectChatIds(ctx, h.DB, int(client.info.ID))
 
 	if err != nil {
 		log.Println(err)
@@ -40,8 +51,8 @@ func (h *Hub) removeUser(ctx context.Context, user *Client) {
 	}
 
 	for _, chatID := range chatIds {
-		for i, userInChat := range h.chats[chatID] {
-			if userInChat == user {
+		for i, clientInChat := range h.chats[chatID] {
+			if clientInChat == client {
 				h.chats[chatID] = append(h.chats[chatID][:i], h.chats[chatID][(i+1):]...)
 				break
 			}
@@ -49,9 +60,10 @@ func (h *Hub) removeUser(ctx context.Context, user *Client) {
 	}
 }
 
-func (h *Hub) addUser(ctx context.Context, user *Client) {
+func (h *Hub) addClient(ctx context.Context, client *Client) {
 
-	chatIds, err := dbp.SelectChatIds(ctx, h.DB, int(user.info.ID))
+	h.clients[client.info.ID] = client
+	chatIds, err := dbp.SelectChatIds(ctx, h.DB, int(client.info.ID))
 
 	if err != nil {
 		log.Println(err)
@@ -59,30 +71,32 @@ func (h *Hub) addUser(ctx context.Context, user *Client) {
 	}
 
 	for _, chatID := range chatIds {
-		h.chats[chatID] = append(h.chats[chatID], user)
+		h.chats[chatID] = append(h.chats[chatID], client)
 	}
 }
 
 func (h *Hub) broadcast(ctx context.Context, msg *models.ChatView) {
 
-	for _, user := range h.chats[int(msg.ChatID)] {
-		if user.info.Username == msg.Username {
+	for _, client := range h.chats[msg.ChatID] {
+		if client.info.Username == msg.Username {
 			continue
 		}
 		select {
-		case user.send <- msg: // escribimos en el canal del usuario para los msgs, no mandamos el mensaje por ws.
+		case client.sendMsg <- msg: // escribimos en el canal del usuario para los msgs, no mandamos el mensaje por ws.
 		default:
-			close(user.send)
-			h.removeUser(ctx, user)
+			close(client.sendMsg)
+			close(client.sendChatInfo)
+			h.removeClient(ctx, client)
 		}
 	}
 }
 
+
 func initChats(hub *Hub) error {
 
-	var chats map[int][]*Client = make(map[int][]*Client, 0)
+	var chats map[uint][]*Client = make(map[uint][]*Client, 0)
 
-	chatIds, err := dbp.SelectChatIds(context.Background(), hub.DB, dbp.ALL) //!
+	chatIds, err := dbp.SelectChatIds(context.Background(), hub.DB, dbp.ALL)
 
 	if err != nil {
 		return err
@@ -94,9 +108,10 @@ func initChats(hub *Hub) error {
 	return err
 }
 
+
+
 // ----------------------------------------------------------------------------
 
-// *{"ChatID":1,"Username":"yuri","Msg":"sadasdasd","SendTime":"2026-10-19T08:47:38.363Z"}
 func (h *Hub) run(ctx context.Context) {
 
 	if err := initChats(h); err != nil {
@@ -110,11 +125,10 @@ func (h *Hub) run(ctx context.Context) {
 			log.Println("conexion closed")
 			return
 		case user := <-h.join:
-			h.addUser(ctx, user)
+			h.addClient(ctx, user)
 		case user := <-h.leave:
-			h.removeUser(ctx, user)
+			h.removeClient(ctx, user)
 		case msg := <-h.broadcastChan:
-			log.Println("MESNAJE RECIBIDO PARA MANDAR POR BROADCAAAAAST")
 			h.broadcast(ctx, msg)
 		}
 	}
