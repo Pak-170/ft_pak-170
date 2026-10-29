@@ -13,6 +13,21 @@ type AuthUser = {
   alias: string | null;
 };
 
+type Chat = {
+	ID: number;
+	Name: string;
+	Type: 'individual' | 'group';
+	Participants: AuthUser[];
+};
+
+type CreateChatData = {
+	name?: string;
+	type: 'individual' | 'group';
+	userIDs: number[];
+};
+
+export const users = writable<AuthUser[]>([]);
+export const chats = writable<Chat[]>([]);
 export const messages = writable<ChatMessage[]>([]);
 export const currentUser = writable<AuthUser | null>(null);
 
@@ -88,6 +103,62 @@ export async function connectWebSocket() {
     console.error('[Client] Could not connect: ', error);
     currentUser.set(null);
   }
+}
+
+export async function fetchUsers(): Promise<AuthUser[]> {
+  const response = await fetch('/api/users', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not load users');
+  }
+
+  const data = (await response.json()) as AuthUser[];
+  users.set(data);
+
+  return data;
+}
+
+export async function fetchChats(): Promise<Chat[]> {
+  const response = await fetch('/api/chats', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not load chats');
+  }
+
+  const data = (await response.json()) as Chat[];
+  chats.set(data);
+
+  return data;
+}
+
+export async function createChat(
+  data: CreateChatData,
+): Promise<Chat> {
+  const response = await fetch('/api/chats', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not create chat');
+  }
+
+  const chat = (await response.json()) as Chat;
+
+  chats.update((currentChats) => [
+    ...currentChats.filter((item) => item.ID !== chat.ID),
+    chat,
+  ]);
+
+  return chat;
 }
 
 export function sendMessage(chatID: number, username: string, message: string) {
