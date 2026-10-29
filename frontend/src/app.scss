@@ -47,6 +47,7 @@ body {
   color: var(--black);
 }
 
+/* Shared chat controls */
 .chat button,
 .modal button,
 .chat input,
@@ -90,6 +91,7 @@ body {
   color: var(--green-dark);
 }
 
+/* CRT overlay */
 .scanlines {
   position: fixed;
   inset: 0;
@@ -111,6 +113,7 @@ body {
     inset 0 0 180px var(--scanline);
 }
 
+
 .scanlines::before,
 .scanlines::after {
   content: '';
@@ -119,9 +122,9 @@ body {
   background: linear-gradient(
     0deg,
     transparent 0%,
-    var(--crt-effectOUT) 45%,
-    var(--crt-effectIN) 50%,
-    var(--crt-effectOUT) 55%,
+    var(--crt-effectOUT) 100%,
+    var(--crt-effectIN) 100%,
+    var(--crt-effectOUT) 100%,
     transparent 100%
   );
   background-size: 100% 200%;
@@ -144,6 +147,7 @@ body {
   }
 }
 
+/* Navigation */
 nav {
   gap: 10px;
   padding: 10px 20px;

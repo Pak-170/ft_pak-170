@@ -3,7 +3,6 @@ package server
 import (
 	"gorm.io/gorm"
 	"go_pakito/models"
-//	"log"
 	"net/http"
 	"os"
 
@@ -20,10 +19,9 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png")
 
-	r.GET("/api/chat", hub.handleWS)
 
 	// --- autentication (publics) ---
-	r.POST("/api/register", Register(db))
+	r.POST("/api/register", hub.Register(db))
 	r.POST("/api/login", Login(db))
 	r.POST("/api/logout", Logout(db))
 
@@ -31,16 +29,22 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	{
 		protected.GET("/me", func(c *gin.Context) {
 			var u models.User
-			if err := db.First(&u, UserID(c)).Error; err != nil {
+			userID := UserID(c)
+			if err := db.First(&u, userID).Error; err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 				return
 			}
+			if hub.clients[userID] != nil {
+				hub.clients[userID].online = true
+			}
 			c.JSON(http.StatusOK, u)
 		})
-		// Chat endpoints go in here
+		protected.POST("/chats", hub.postChats)
+		protected.GET("/chats", hub.getChats)
+		protected.GET("/users", hub.getUsers)
+		protected.GET("/chat", hub.handleWS)
 	}
 
-	//log.Fatal(http.ListenAndServe(":8080", nil))
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080" // para ejecutar fuera de Docker

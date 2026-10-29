@@ -167,7 +167,7 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(20) NOT NULL,
   `alias` varchar(255) DEFAULT NULL,
-  `password_hash` VARCHAR(255),
+  `password_hash` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -180,12 +180,12 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'pepe','pepito', NULL),
-(3,'pepa','pepa pepita', NULL),
-(5,'pepa2','pepa pepita', NULL),
-(12,'pepa3','pepa pepita', NULL),
-(13,'pepa4','pepa pepita', NULL),
-(15,'pepa5','pepa pepita', NULL);
+(1,'pepe','pepito', '$2a$10$d.133hv4dZAuDIDgDBiSVe6JcKfrgiKZzCacT.9vilzn8fWbYtgPm'),
+(3,'pepa','pepa pepita', '$2a$10$JxekNi7LySZr7.gXVkXTA.SDK7u/lHC7IYqk/kZN4cpsG8TWLtS3W'),
+(5,'pepa2','pepa pepita', '$2a$10$PG75kQuiOh7YasRQCcoxZOaB5EL4WUDFNLY0zvBF3a6hHRiqBiNQe'),
+(12,'pepa3','pepa pepita', '$2a$10$y.Xxgtyoyh3n/Svc3PUiBe/f5SIPWs0wr2rCup19hDJBOUrG8.bka'),
+(13,'pepa4','pepa pepita', '$2a$10$KXud9B8F89h3YFb40hzA7.MA.xLq9Z6tzuGE17LHblbYAtR9ed8TO'),
+(15,'pepa5','pepa pepita', '$2a$10$pp/KmBz.T6FWL2rqdztur.s665DDQaTu4lkh8nxtvsdeQVFUnCF0O');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
