@@ -344,6 +344,13 @@
 
 <style lang="scss">
 
+.monitor-content {
+  position: fixed;
+  width: 80%;
+  height: 85dvh;
+  overflow: hidden;
+}
+
 .new-chat-button {
   border-color: var(--green-light);
   color: var(--green-bright);
@@ -565,12 +572,10 @@ input {
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    padding: 12px 16px;
-
-    border: 1px solid var(--green-dark);
     overflow-y: auto;
-    box-shadow: inset 0 0 30px rgba(51, 255, 51, 0.025);
-    scrollbar-width: none;
+    padding: 12px 16px;
+    border: 1px solid var(--green-dark);
+	scrollbar-width: none;
   }
 
   .message.own-message {
