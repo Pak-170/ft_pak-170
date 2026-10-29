@@ -179,9 +179,8 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-/* For Tests User Pepito password is: 12345678 */;
 INSERT INTO `users` VALUES
-(1,'pepe','pepito', '$2a$10$lq0kCI6O6/UO.pOZDX5lyeSPHfYn1lGBfFpYKW/n3yrTlScWBI7Oa'),
+(1,'pepe','pepito', NULL),
 (3,'pepa','pepa pepita', NULL),
 (5,'pepa2','pepa pepita', NULL),
 (12,'pepa3','pepa pepita', NULL),
