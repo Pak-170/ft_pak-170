@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 
 type ChatMessage = {
+  infoType: 'chat';
   ChatID: number;
   Username: string;
   Msg: string;
@@ -8,22 +9,25 @@ type ChatMessage = {
 };
 
 type AuthUser = {
+  infoType: 'chat';
   ID: number;
   username: string;
   alias: string | null;
 };
 
 type Chat = {
-	ID: number;
-	Name: string;
-	Type: 'individual' | 'group';
-	Participants: AuthUser[];
+  infoType: 'chat';
+  ID: number;
+  Name: string;
+  Type: 'individual' | 'group';
+  Participants: AuthUser[];
 };
 
 type CreateChatData = {
-	name?: string;
-	type: 'individual' | 'group';
-	userIDs: number[];
+  infoType: 'chat';
+  name?: string;
+  type: 'individual' | 'group';
+  userIDs: number[];
 };
 
 export const users = writable<AuthUser[]>([]);
@@ -135,9 +139,7 @@ export async function fetchChats(): Promise<Chat[]> {
   return data;
 }
 
-export async function createChat(
-  data: CreateChatData,
-): Promise<Chat> {
+export async function createChat(data: CreateChatData): Promise<Chat> {
   const response = await fetch('/api/chats', {
     method: 'POST',
     credentials: 'include',
@@ -168,6 +170,7 @@ export function sendMessage(chatID: number, username: string, message: string) {
   }
 
   const data: ChatMessage = {
+	infoType: 'chat',
     ChatID: chatID,
     Username: username,
     Msg: message,

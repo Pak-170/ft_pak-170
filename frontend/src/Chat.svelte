@@ -50,9 +50,7 @@
   $: selectedMessages = $messages
     .filter((msg) => msg.ChatID === selectedChatID)
     .sort(
-      (a, b) =>
-        new Date(a.SendTime).getTime() -
-        new Date(b.SendTime).getTime(),
+      (a, b) => new Date(a.SendTime).getTime() - new Date(b.SendTime).getTime(),
     );
 
   $: filteredUsers = $users.filter(
@@ -63,14 +61,9 @@
         .includes(search.toLowerCase()),
   );
 
-  $: selectedChat = $chats.find(
-    (chat) => chat.ID === selectedChatID,
-  );
+  $: selectedChat = $chats.find((chat) => chat.ID === selectedChatID);
 
-  $: if (
-    selectedChatID === null &&
-    chatIDs.length > 0
-  ) {
+  $: if (selectedChatID === null && chatIDs.length > 0) {
     selectedChatID = chatIDs[0];
   }
 
@@ -127,11 +120,10 @@
 
     try {
       const chat = await createChatRequest({
+        infoType: 'chat',
         type: chatType === 'private' ? 'individual' : 'group',
         userIDs: selectedUsers.map((user) => user.ID),
-        ...(chatType === 'group'
-          ? { name: groupName.trim() }
-          : {}),
+        ...(chatType === 'group' ? { name: groupName.trim() } : {}),
       });
 
       selectedChatID = chat.ID;
@@ -172,10 +164,12 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>Chats</h2>
+
         <button
           class="new-chat"
           onclick={openNewChat}
           aria-label="New Chat"
+          title="New Chat"
         >
           +
         </button>
@@ -199,13 +193,12 @@
 
         <div class="messages" bind:this={messagesContainer}>
           {#each selectedMessages as msg, i (`${msg.ChatID}-${msg.SendTime}-${i}`)}
-            <div
-              class="message"
-              class:own-message={msg.Username === username}
-            >
+            <div class="message" class:own-message={msg.Username === username}>
               <strong>{msg.Username}</strong>
               <div>{msg.Msg}</div>
-              <small>{new Date(msg.SendTime).toLocaleTimeString()}</small>
+              <small>
+                {new Date(msg.SendTime).toLocaleTimeString()}
+              </small>
             </div>
           {/each}
         </div>
@@ -217,6 +210,7 @@
           }}
         >
           <input
+            aria-label="Write a message"
             placeholder="Write a message..."
             bind:value={message}
           />
@@ -225,10 +219,9 @@
         <div class="header">
           <h1>Chat</h1>
         </div>
+
         <div class="messages">
-          <div class="message">
-            Select a chat or create a new one.
-          </div>
+          <div class="message">Select a chat or create a new one.</div>
         </div>
       {/if}
     </div>
@@ -251,9 +244,12 @@
     >
       <div class="modal-header">
         <h2 id="modal-title">New Chat</h2>
+
         <button
+          type="button"
           onclick={() => (showNewChat = false)}
           aria-label="Close"
+          title="Close"
         >
           x
         </button>
@@ -261,6 +257,7 @@
 
       <div class="chat-type">
         <button
+          type="button"
           class:active={chatType === 'private'}
           onclick={() => {
             chatType = 'private';
@@ -272,6 +269,7 @@
         </button>
 
         <button
+          type="button"
           class:active={chatType === 'group'}
           onclick={() => {
             chatType = 'group';
@@ -286,6 +284,7 @@
       {#if chatType === 'group'}
         <input
           class="group-name"
+          aria-label="Group name"
           placeholder="Group Name"
           bind:value={groupName}
         />
@@ -293,6 +292,7 @@
 
       <input
         class="user-search"
+        aria-label="Search users"
         placeholder="Search users..."
         bind:value={search}
       />
@@ -304,35 +304,36 @@
       <div class="user-list">
         {#each filteredUsers as user (user.ID)}
           <button
+            type="button"
             class:selected={selectedUsers.some((u) => u.ID === user.ID)}
+            aria-pressed={selectedUsers.some((u) => u.ID === user.ID)}
             onclick={() => toggleUser(user)}
           >
-            <span class="avatar">
-              {user.username.slice(0, 1).toUpperCase()}
+            <span>
+              {user.username.toUpperCase()}
             </span>
+
             <span>{user.alias || user.username}</span>
-            <span class="check">
+
+            <span aria-hidden="true">
               {selectedUsers.some((u) => u.ID === user.ID) ? '✓' : ''}
             </span>
           </button>
         {:else}
-          <p class="empty-users">
-            No users available.
-          </p>
+          <p class="empty-users">No users available.</p>
         {/each}
       </div>
 
       <div class="modal-actions">
-        <button onclick={() => (showNewChat = false)}>
+        <button type="button" onclick={() => (showNewChat = false)}>
           Cancel
         </button>
+
         <button
-          class="create-button"
-          disabled={
-            creatingChat ||
+          type="button"
+          disabled={creatingChat ||
             selectedUsers.length === 0 ||
-            (chatType === 'group' && !groupName.trim())
-          }
+            (chatType === 'group' && !groupName.trim())}
           onclick={createNewChat}
         >
           {creatingChat ? 'Creating...' : 'Create Chat'}
@@ -343,189 +344,117 @@
 {/if}
 
 <style lang="scss">
-
-.monitor-content {
-  position: fixed;
-  width: 80%;
-  height: 85dvh;
-  overflow: hidden;
-}
-
-.new-chat-button {
-  border-color: var(--green-light);
-  color: var(--green-bright);
-}
-
-.new-chat-button:hover {
-  box-shadow: 0 0 8px var(--green-dark);
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.8);
-}
-
-.modal {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  width: 100%;
-  max-width: 450px;
-  max-height: 80dvh;
-  padding: 25px;
-  overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--green-light);
-  box-shadow: 0 0 20px var(--green-dark);
-}
-
-.modal h2 {
-  margin: 0;
-  color: var(--green-bright);
-}
-
-.modal label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chat-type {
-  display: flex;
-  gap: 10px;
-}
-
-.chat-type button {
-  flex: 1;
-  padding: 10px;
-  background: var(--black);
-  border: 1px solid var(--green-dark);
-  color: var(--green);
-  cursor: pointer;
-}
-
-.chat-type button.active,
-.chat-type button:hover {
-  border-color: var(--green-light);
-  color: var(--green-bright);
-  box-shadow: 0 0 8px var(--green-dark);
-}
-
-.modal input {
-  width: 100%;
-  padding: 12px;
-  background: var(--black);
-  border: 1px solid var(--green-dark);
-  color: var(--green);
-  outline: none;
-}
-
-input {
-    outline: none;
-    box-shadow: inset 0 0 12px rgba(51, 255, 51, 0.025);
+  .monitor-content {
+    position: fixed;
+    width: 80%;
+    height: 85dvh;
+    overflow: hidden;
   }
 
-.modal input:focus {
-  outline: none;
-  border-color: var(--green-light);
-  box-shadow: 0 0 8px var(--green-dark);
-}
-
-.modal input::placeholder {
-  color: var(--green-dark);
-}
-
-.user-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid var(--green-dark);
-}
-
-.user-list button {
-  padding: 12px;
-  text-align: left;
-  background: var(--black);
-  border: none;
-  border-bottom: 1px solid var(--green-dark);
-  color: var(--green);
-  cursor: pointer;
-}
-
-.user-list button:last-child {
-  border-bottom: none;
-}
-
-.user-list button.selected,
-.user-list button:hover {
-  background: var(--surface-light);
-  color: var(--green-bright);
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.modal-actions button {
-  padding: 10px 15px;
-  background: var(--black);
-  border: 1px solid var(--green-dark);
-  color: var(--green);
-  cursor: pointer;
-}
-
-.modal-actions button:last-child {
-  border-color: var(--green-light);
-  color: var(--green-bright);
-}
-
-.modal-actions button:hover:not(:disabled) {
-  box-shadow: 0 0 8px var(--green-dark);
-}
-
-.modal-actions button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-  .message small {
-    display: block;
-    margin-top: 5px;
-    color: var(--green-dark);
-  }
-
-.chat-layout {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--black);
-  color: var(--green);
-}
-
-  .sidebar {
-    min-width: 150px;
-    width: 15%;
-    flex-shrink: 0;
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 20px;
-    border-right: 1px solid var(--green-dark);
-    background: var(--surface);
+    background: rgba(0, 0, 0, 0.8);
   }
 
+  .modal {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 450px;
+    max-height: 80dvh;
+    padding: 25px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--green-light);
+    box-shadow: 0 0 20px var(--green-dark);
+  }
+
+  .modal h2,
   .sidebar h2 {
     margin-top: 0;
     color: var(--green-bright);
+  }
+
+  .modal label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chat-type,
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .chat-type button {
+    flex: 1;
+    padding: 10px;
+  }
+
+  .user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--green-dark);
+  }
+
+  .user-list button {
+    padding: 12px;
+    text-align: left;
+    border: 0;
+    border-bottom: 1px solid var(--green-dark);
+  }
+
+  .user-list button:last-child {
+    border-bottom: 0;
+  }
+
+  .modal-actions {
+    justify-content: flex-end;
+  }
+
+  .modal-actions button {
+    padding: 10px 15px;
+  }
+
+  .modal-actions button:last-child {
+    border-color: var(--green-light);
+    color: var(--green-bright);
+  }
+
+  .modal-actions button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .chat-layout {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--black);
+    color: var(--green);
+  }
+
+  .sidebar {
+    flex: 0 0 15%;
+    min-width: 150px;
+    padding: 20px;
+    overflow-y: auto;
+    border-right: 1px solid var(--green-dark);
+    background: var(--surface);
   }
 
   .sidebar button {
@@ -533,26 +462,18 @@ input {
     padding: 12px;
     margin-bottom: 8px;
     text-align: left;
-    background: var(--black);
-    border: 1px solid var(--green-dark);
-    color: var(--green);
-    cursor: pointer;
-  }
-
-  .sidebar button.active,
-  .sidebar button:hover {
-    border-color: var(--green-light);
-    color: var(--green-bright);
-    box-shadow: 0 0 8px var(--green-dark);
   }
 
   .chat {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    width: 0;
     min-width: 0;
+    min-height: 0;
     height: 100%;
     padding: 30px;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
     background: var(--black);
     color: var(--green);
   }
@@ -563,19 +484,28 @@ input {
     background: var(--surface);
     border: 1px solid var(--terminal-border);
     box-shadow:
-      inset 0 0 15px --scanline,
-      0 0 8px --scanline-glow;
+      inset 0 0 15px var(--scanline),
+      0 0 8px var(--scanline-glow);
   }
 
   .messages {
     display: flex;
-    flex-direction: column;
     flex: 1;
+    flex-direction: column;
     min-height: 0;
-    overflow-y: auto;
     padding: 12px 16px;
+    overflow-y: auto;
+    overflow-x: hidden;
     border: 1px solid var(--green-dark);
-	scrollbar-width: none;
+    box-shadow: inset 0 0 30px rgba(51, 255, 51, 0.025);
+    scrollbar-width: none;
+  }
+
+  .message {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-bottom: 1px dashed var(--green-dark);
+    overflow-wrap: anywhere;
   }
 
   .message.own-message {
@@ -586,44 +516,39 @@ input {
     align-self: flex-start;
   }
 
-  .message {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-bottom: 1px dashed var(--green-dark);
-    overflow-wrap: anywhere;
-  }
-
   .message strong {
     display: block;
     margin-bottom: 4px;
     color: var(--green-bright);
-    text-shadow: 0 0 5px rgba(182, 255, 182, 0.4);
+    text-shadow: 0 0 5px var(--green-bright);
   }
 
-  form {
+  .message small {
+    display: block;
+    margin-top: 5px;
+    color: var(--green-dark);
+  }
+
+  .chat form {
     flex-shrink: 0;
     margin-top: 15px;
   }
 
-  form input {
-    width: 100%;
+  .chat form input {
     padding: 15px;
     margin-bottom: 5dvh;
-    background: var(--black);
-    border: 1px solid var(--green-dark);
-    color: var(--green);
-    outline: none;
-    box-shadow: inset 0 0 10px rgba(51, 255, 51, 0.025);
+    box-shadow: inset 0 0 10px var(--scanline);
   }
 
-  form input:focus {
-    border-color: var(--green-light);
+  .chat form input:focus {
     box-shadow:
-      0 0 8px --scanline-glow,
-      inset 0 0 10px --text-glow;
+      0 0 8px var(--scanline-glow),
+      inset 0 0 10px var(--text-glow);
   }
 
-  form input::placeholder {
-    color: var(--green-dark);
+  .new-chat {
+    border-color: var(--green-light);
+    color: var(--green-bright);
+    background-color: var(--black);
   }
 </style>

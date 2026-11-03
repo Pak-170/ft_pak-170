@@ -10,24 +10,22 @@
   let errorMessage = $state('');
   let successMessage = $state('');
   let passwordsDoNotMatch = $derived(
-  register &&
-  confPassword.length > 0 &&
-  password !== confPassword
-);
-$effect(() => {
-  $passwordMismatch = passwordsDoNotMatch;
-});
+    register && confPassword.length > 0 && password !== confPassword,
+  );
+  $effect(() => {
+    $passwordMismatch = passwordsDoNotMatch;
+  });
 
   async function submit(e: Event) {
     e.preventDefault();
 
     errorMessage = '';
     successMessage = '';
-	$loginHasError = false;
+    $loginHasError = false;
 
     if (register && password !== confPassword) {
       errorMessage = 'ACCESS CODES DO NOT MATCH';
-	  $loginHasError = true;
+      $loginHasError = true;
       return;
     }
 
@@ -58,13 +56,13 @@ $effect(() => {
         data = JSON.parse(responseText);
       } catch {
         errorMessage = `SERVER ERROR (${response.status}): ${responseText}`;
-		$loginHasError = true;
+        $loginHasError = true;
         return;
       }
 
       if (!response.ok) {
         errorMessage = data.error || 'AUTHENTICATION FAILED';
-		$loginHasError = true;
+        $loginHasError = true;
         return;
       }
 
@@ -78,7 +76,7 @@ $effect(() => {
 
       if (!meResponse.ok) {
         errorMessage = 'SESSION CREATED, BUT USER COULD NOT BE LOADED';
-		$loginHasError = true;
+        $loginHasError = true;
         return;
       }
 
@@ -91,7 +89,7 @@ $effect(() => {
     } catch (error) {
       console.error('Authentication error:', error);
       errorMessage = 'CONNECTION ERROR';
-	  $loginHasError = true;
+      $loginHasError = true;
     } finally {
       loading = false;
     }
@@ -169,7 +167,7 @@ $effect(() => {
         errorMessage = '';
         successMessage = '';
         confPassword = '';
-		$loginHasError = false;
+        $loginHasError = false;
       }}
     >
       {register ? '>> EXISTING USER // LOGIN' : '>> NEW USER // REGISTER'}
@@ -182,26 +180,24 @@ $effect(() => {
 </div>
 
 <style lang="scss">
-
-.login-page {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  overflow: auto;
-  background: radial-gradient(
-    circle at center,
-    var(--surface) 0%,
-    var(--black) 70%
-  );
-  color: var(--green);
-  text-shadow: 0 0 4px var(--text-glow);
-}
-
+  .login-page {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: auto;
+    background: radial-gradient(
+      circle at center,
+      var(--surface) 0%,
+      var(--black) 70%
+    );
+    color: var(--green);
+    text-shadow: 0 0 4px var(--text-glow);
+  }
 
   .login-box {
     position: relative;
@@ -382,19 +378,19 @@ $effect(() => {
   }
 
   @media (max-width: 550px) {
-  .login-page {
-    top: 7%;
-    left: 5%;
-    width: 79%;
-    height: 81%;
-    padding: 10px;
-  }
+    .login-page {
+      top: 7%;
+      left: 5%;
+      width: 79%;
+      height: 81%;
+      padding: 10px;
+    }
 
-  .login-box {
-    width: 100%;
-    max-height: 100%;
-    overflow-y: auto;
-    padding: 16px;
+    .login-box {
+      width: 100%;
+      max-height: 100%;
+      overflow-y: auto;
+      padding: 16px;
+    }
   }
-}
 </style>
