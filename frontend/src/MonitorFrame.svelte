@@ -36,10 +36,7 @@
 </script>
 
 <div class="monitor-frame">
-  <img
-    src={showErrorImage ? errorImage : normalImage}
-    alt=""
-  />
+  <img src={showErrorImage ? errorImage : normalImage} alt="" />
 </div>
 
 <style>

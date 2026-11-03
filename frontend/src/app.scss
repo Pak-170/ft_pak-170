@@ -2,7 +2,6 @@
 
 :root {
   --black: #010201;
-
   --surface: #050b05;
   --surface-light: #081208;
 
@@ -13,12 +12,10 @@
   --green-dim: #237a29;
 
   --terminal-border: #1b661b;
-
   --scanline: rgba(51, 255, 51, 0.035);
   --scanline-glow: rgba(51, 255, 51, 0.08);
   --crt-effectOUT: rgba(51, 255, 51, 0.015);
   --crt-effectIN: rgba(0, 186, 0, 0.123);
-
   --terminal-glow: rgba(51, 255, 51, 0.12);
   --text-glow: rgba(0, 201, 0, 0.112);
 
@@ -36,16 +33,13 @@
 
 html,
 body {
-  margin: 0;
-  padding: 0;
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   background: var(--black);
   color: var(--green);
-}
-
-body {
-  overflow: hidden;
 }
 
 ::selection {
@@ -53,9 +47,55 @@ body {
   color: var(--black);
 }
 
+/* Shared chat controls */
+.chat button,
+.modal button,
+.chat input,
+.modal input {
+  color: var(--green);
+  background: var(--black);
+  border: 1px solid var(--green-dark);
+  outline: none;
+}
+
+.chat button,
+.modal button {
+  cursor: pointer;
+}
+
+.chat button:hover,
+.chat button.active,
+.chat button.selected,
+.modal button:hover:not(:disabled),
+.modal button.active,
+.modal button.selected {
+  color: var(--green-bright);
+  border-color: var(--green-light);
+  box-shadow: 0 0 8px var(--green-dark);
+}
+
+.chat input,
+.modal input {
+  width: 100%;
+  padding: 12px;
+  box-shadow: inset 0 0 12px rgba(51, 255, 51, 0.025);
+}
+
+.chat input:focus,
+.modal input:focus {
+  border-color: var(--green-light);
+}
+
+.chat input::placeholder,
+.modal input::placeholder {
+  color: var(--green-dark);
+}
+
+/* CRT overlay */
 .scanlines {
   position: fixed;
   inset: 0;
+  z-index: 9999;
   width: 100vw;
   height: 100dvh;
   pointer-events: none;
@@ -71,10 +111,10 @@ body {
   box-shadow:
     inset 0 0 80px var(--scanline-glow),
     inset 0 0 180px var(--scanline);
-  z-index: 9999;
 }
 
-.scanlines::before {
+.scanlines::before,
+.scanlines::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -87,22 +127,13 @@ body {
     transparent 100%
   );
   background-size: 100% 200%;
+}
+
+.scanlines::before {
   animation: crt-sweep 0.06s linear infinite;
 }
 
 .scanlines::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    0deg,
-    transparent 0%,
-    var(--crt-effectOUT) 45%,
-    var(--crt-effectIN) 0%,
-    var(--crt-effectOUT) 55%,
-    transparent 100%
-  );
-  background-size: 100% 200%;
   animation: crt-sweep 5s linear infinite;
 }
 
@@ -115,6 +146,7 @@ body {
   }
 }
 
+/* Navigation */
 nav {
   gap: 10px;
   padding: 10px 20px;
