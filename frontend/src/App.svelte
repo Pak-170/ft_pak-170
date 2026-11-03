@@ -8,7 +8,7 @@
 
   import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
 
-  let keyStates = $state([false, false, false, false]);
+  let keyStates = $state([true, false, false, false]);
 
   function activateKey(index) {
     keyStates = keyStates.map((_, i) => i === index);
@@ -23,13 +23,6 @@
 
 <div class="monitor-container">
   <div class="web-content">
-    <nav>
-      <a href="#/" onclick={() => activateKey(0)}> HOME </a>
-
-      <a href="#/login" onclick={() => activateKey(1)}> LOGIN </a>
-
-      <a href="#/chat" onclick={() => activateKey(2)}> CHAT </a>
-    </nav>
     <Router {routes} />
   </div>
 
@@ -37,17 +30,29 @@
     hasError={$loginHasError || $passwordMismatch}
     ledState="all_off"
     {keyStates}
+    onKeyClick={activateKey}
   />
 </div>
 
 <style>
-  :global(body) {
-    margin: 0;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-  }
+  :global(html),
+:global(body) {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+:global(body) {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background-image: url('/Bg_PAK.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 
   .monitor-container {
     position: relative;
