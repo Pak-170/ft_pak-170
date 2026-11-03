@@ -170,7 +170,7 @@ export function sendMessage(chatID: number, username: string, message: string) {
   }
 
   const data: ChatMessage = {
-	infoType: 'chat',
+    infoType: 'chat',
     ChatID: chatID,
     Username: username,
     Msg: message,
