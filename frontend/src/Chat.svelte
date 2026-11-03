@@ -344,12 +344,14 @@
 {/if}
 
 <style lang="scss">
-  .monitor-content {
-    position: fixed;
-    width: 80%;
-    height: 85dvh;
-    overflow: hidden;
-  }
+.monitor-content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
 
   .modal-overlay {
     position: fixed;
