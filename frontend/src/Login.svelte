@@ -1,6 +1,7 @@
 <script lang="ts">
   import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
   import { currentUser } from '../client';
+  import { onMount } from 'svelte';
 
   let password = $state('');
   let username = $state('');
@@ -9,6 +10,9 @@
   let loading = $state(false);
   let errorMessage = $state('');
   let successMessage = $state('');
+  let loginPage: HTMLDivElement;
+  let loginBox: HTMLDivElement;
+  let scale = $state(1);
   let passwordsDoNotMatch = $derived(
     register && confPassword.length > 0 && password !== confPassword,
   );
@@ -16,6 +20,21 @@
     $passwordMismatch = passwordsDoNotMatch;
   });
 
+  onMount(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      if (!loginPage || !loginBox) return;
+      const availableWidth = loginPage.clientWidth - 40;
+      const availableHeight = loginPage.clientHeight - 40;
+      const boxWidth = loginBox.offsetWidth;
+      const boxHeight = loginBox.offsetHeight;
+      const widthScale = availableWidth / boxWidth;
+      const heightScale = availableHeight / boxHeight;
+      scale = Math.min(1, widthScale, heightScale);
+    });
+    resizeObserver.observe(loginPage);
+    resizeObserver.observe(loginBox);
+    return () => resizeObserver.disconnect();
+  });
   async function submit(e: Event) {
     e.preventDefault();
 
@@ -96,9 +115,14 @@
   }
 </script>
 
-<div class="login-page">
+<div class="login-page" bind:this={loginPage}>
   <div class="scanlines"></div>
-  <div class="login-box">
+
+  <div
+    class="login-box"
+    bind:this={loginBox}
+    style={`--login-scale: ${scale}`}
+  >
     <div class="header">
       <div class="logo">◆</div>
       <div class="title">
@@ -136,7 +160,7 @@
             type="password"
             placeholder="••••••••"
             bind:value={confPassword}
-            autocomplete={register ? 'new-password' : 'current-password'}
+            autocomplete="new-password"
             required
           />
           {#if confPassword.length > 0}
@@ -189,7 +213,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    overflow: auto;
+    overflow: hidden;
     background: radial-gradient(
       circle at center,
       var(--surface) 0%,
@@ -199,11 +223,19 @@
     text-shadow: 0 0 4px var(--text-glow);
   }
 
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+
   .login-box {
     position: relative;
     width: 430px;
     max-width: 100%;
     padding: 30px;
+    box-sizing: border-box;
     background: linear-gradient(180deg, var(--surface-light), var(--surface));
     border: var(--terminal-border-width) solid var(--terminal-border);
     box-shadow:
@@ -212,6 +244,8 @@
       12px 12px 0 var(--green-dark),
       0 0 30px var(--terminal-glow);
     z-index: 2;
+    transform: scale(var(--login-scale, 1));
+    transform-origin: center;
   }
 
   .header {
@@ -299,6 +333,7 @@
   input {
     width: 100%;
     padding: 12px;
+    box-sizing: border-box;
     background: var(--black);
     border: 1px solid var(--green-dark);
     outline: none;
@@ -375,22 +410,5 @@
     font-size: 17px;
     color: var(--green);
     letter-spacing: 1px;
-  }
-
-  @media (max-width: 550px) {
-    .login-page {
-      top: 7%;
-      left: 5%;
-      width: 79%;
-      height: 81%;
-      padding: 10px;
-    }
-
-    .login-box {
-      width: 100%;
-      max-height: 100%;
-      overflow-y: auto;
-      padding: 16px;
-    }
   }
 </style>

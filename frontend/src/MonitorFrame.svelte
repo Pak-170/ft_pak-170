@@ -7,12 +7,14 @@
     hasError?: boolean;
     ledState?: LedState;
     keyStates?: boolean[];
+    onKeyClick?: (index: number) => void;
   };
 
   let {
     hasError = false,
     ledState = 'all_off',
-    keyStates = [false, false, false, false],
+    keyStates = [true, false, false, false],
+    onKeyClick,
   }: Props = $props();
 
   const borderImage = '/border.png';
@@ -79,16 +81,50 @@
         : ledImages.all_off
       : ledImages[ledState],
   );
+  function handleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
+    onKeyClick?.(3);
+  }
 </script>
 
 <div class="monitor-frame">
-  <img class="layer border" src={borderImage} alt="" />
-
-  <img class="layer leds" src={currentLedImage} alt="" />
-
+  <img class="layer" src={borderImage} alt="" />
+  <img class="layer" src={currentLedImage} alt="" />
   {#each keyImages as key, i}
-    <img class="layer key" src={keyStates[i] ? key.on : key.off} alt="" />
+    <img
+      class="layer"
+      src={keyStates[i] ? key.on : key.off}
+      alt=""
+    />
   {/each}
+  <a
+    class="key-hitbox key-1"
+    href="#/"
+    aria-label="Home"
+    onclick={() => onKeyClick?.(0)}
+  ></a>
+  <a
+    class="key-hitbox key-2"
+    href="#/login"
+    aria-label="Login"
+    onclick={() => onKeyClick?.(1)}
+  ></a>
+  <a
+    class="key-hitbox key-3"
+    href="#/chat"
+    aria-label="Chat"
+    onclick={() => onKeyClick?.(2)}
+  ></a>
+  <button
+    class="key-hitbox key-4"
+    type="button"
+    aria-label="Fullscreen"
+    onclick={handleFullscreen}
+  ></button>
 </div>
 
 <style>
@@ -110,5 +146,42 @@
     height: 100%;
     object-fit: fill;
     pointer-events: none;
+  }
+
+  .key-hitbox {
+    position: absolute;
+    z-index: 2;
+    pointer-events: auto;
+	border: none;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  .key-1 {
+    top: 34%;
+    right: 3%;
+    width: 6%;
+    height: 9%;
+  }
+
+  .key-2 {
+    top: 49%;
+    right: 3%;
+    width: 6%;
+    height: 9%;
+  }
+
+  .key-3 {
+    top: 65%;
+    right: 3%;
+    width: 6%;
+    height: 9%;
+  }
+
+  .key-4 {
+    top: 82%;
+    right: 3%;
+    width: 6%;
+    height: 8%;
   }
 </style>
