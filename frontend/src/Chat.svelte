@@ -390,11 +390,6 @@
     color: var(--green-bright);
   }
 
-  .modal label {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
 
   .chat-type,
   .modal-actions {
