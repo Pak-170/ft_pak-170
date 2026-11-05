@@ -36,23 +36,22 @@
 
 <style>
   :global(html),
-:global(body) {
-  margin: 0;
-  width: 100%;
-  min-height: 100%;
-}
+  :global(body) {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+  }
 
-:global(body) {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background-image: url('/Bg_PAK.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
+  :global(body) {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background-image: url('/Bg_PAK.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
 
   .monitor-container {
     position: relative;

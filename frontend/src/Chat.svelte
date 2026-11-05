@@ -158,7 +158,7 @@
 </script>
 
 <div class="monitor-content">
-<div class="scanlines"></div>
+  <div class="scanlines"></div>
   <div class="chat-layout">
     <aside class="sidebar">
       <div class="sidebar-header">
@@ -343,21 +343,21 @@
 {/if}
 
 <style lang="scss">
-.scanlines {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-}
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
 
-.monitor-content {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-}
+  .monitor-content {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
 
   .modal-overlay {
     position: fixed;
