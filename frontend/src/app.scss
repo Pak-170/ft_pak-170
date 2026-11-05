@@ -47,7 +47,6 @@ body {
   color: var(--black);
 }
 
-/* Shared chat controls */
 .chat button,
 .modal button,
 .chat input,
@@ -91,7 +90,6 @@ body {
   color: var(--green-dark);
 }
 
-/* CRT overlay */
 .scanlines {
   position: fixed;
   inset: 0;
@@ -146,7 +144,6 @@ body {
   }
 }
 
-/* Navigation */
 nav {
   gap: 10px;
   padding: 10px 20px;
