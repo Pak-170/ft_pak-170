@@ -118,11 +118,7 @@
 <div class="login-page" bind:this={loginPage}>
   <div class="scanlines"></div>
 
-  <div
-    class="login-box"
-    bind:this={loginBox}
-    style={`--login-scale: ${scale}`}
-  >
+  <div class="login-box" bind:this={loginBox} style={`--login-scale: ${scale}`}>
     <div class="header">
       <div class="logo">◆</div>
       <div class="title">

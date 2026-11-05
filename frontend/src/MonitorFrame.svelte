@@ -95,11 +95,7 @@
   <img class="layer" src={borderImage} alt="" />
   <img class="layer" src={currentLedImage} alt="" />
   {#each keyImages as key, i}
-    <img
-      class="layer"
-      src={keyStates[i] ? key.on : key.off}
-      alt=""
-    />
+    <img class="layer" src={keyStates[i] ? key.on : key.off} alt="" />
   {/each}
   <a
     class="key-hitbox key-1"
@@ -152,7 +148,7 @@
     position: absolute;
     z-index: 2;
     pointer-events: auto;
-	border: none;
+    border: none;
     cursor: pointer;
     background: transparent;
   }
