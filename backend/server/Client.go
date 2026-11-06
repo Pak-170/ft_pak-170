@@ -13,16 +13,20 @@ type Client struct {
 	hub		*Hub
 	ws		*websocket.Conn
 	info	*models.User
+	online	bool
 
 	sendMsg			chan *models.ChatView
 	sendChatInfo	chan *models.Chat
+	notification	chan *any
 }
 
-func newClient(h *Hub, ws *websocket.Conn, info *models.User) Client {
-	return Client{
+func newClient(h *Hub, ws *websocket.Conn, info *models.User) *Client {
+	return &Client{
 		hub:			h,
 		ws:				ws,
 		info:			info,
+		online:			false,
+
 		sendMsg:		make(chan *models.ChatView),
 		sendChatInfo:	make(chan *models.Chat),
 	}
@@ -64,13 +68,14 @@ func (c *Client) writeToWS(ctx context.Context) {
 			}
 			err := c.ws.WriteJSON(msg)
 			if err != nil {
-				log.Printf("WS error: %v\n", err)
+				log.Printf("WS error msg: %v\n", err)
 				return
 			}
 		case chatInfo := <-c.sendChatInfo:
+			log.Printf("WS recibido para un nuevo chat en el cliente %v: %v\n", c.info.ID, chatInfo)
 			err := c.ws.WriteJSON(chatInfo)
 			if err != nil {
-				log.Printf("WS error: %v\n", err)
+				log.Printf("WS error chat: %v\n", err)
 				return
 			}
 		}

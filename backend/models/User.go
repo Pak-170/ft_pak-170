@@ -7,6 +7,7 @@ type User struct {
 	Username		string	`gorm:"username" json:"username"`
 	Alias			*string	`gorm:"alias" json:"alias"`
 	PasswordHash	string	`gorm:"password_hash" json:"-"`
+	online			bool	`gorm:"online" json:"-"`
 }
 
 func (User) TableName() string {

@@ -92,7 +92,7 @@ func (h *Hub) broadcast(ctx context.Context, msg *models.ChatView) {
 }
 
 
-func initChats(hub *Hub) error {
+func (hub *Hub)initChats() error {
 
 	var chats map[uint][]*Client = make(map[uint][]*Client, 0)
 
@@ -108,14 +108,31 @@ func initChats(hub *Hub) error {
 	return err
 }
 
+func (hub *Hub)initClients() error {
+	var clients map[uint]*Client = make(map[uint]*Client, 0)
 
+	clientsDB, err := dbp.SelectAny[models.User](context.Background(), hub.DB)
+
+	if err != nil {
+		return err
+	}
+	for _, clientDB := range clientsDB {
+		clients[clientDB.ID] = newClient(hub, nil, &clientDB)
+	}
+	hub.clients = clients
+	return err
+}
 
 // ----------------------------------------------------------------------------
 
 func (h *Hub) run(ctx context.Context) {
 
-	if err := initChats(h); err != nil {
+	if err := h.initChats(); err != nil {
 		log.Printf("ERROR INITIALIZING CHATS: %v\n", err)
+		return
+	}
+	if err := h.initClients(); err != nil {
+		log.Printf("ERROR INITIALIZING CLIENTS: %v\n", err)
 		return
 	}
 

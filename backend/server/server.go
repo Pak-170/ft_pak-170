@@ -3,7 +3,6 @@ package server
 import (
 	"gorm.io/gorm"
 	"go_pakito/models"
-//	"log"
 	"net/http"
 	"os"
 
@@ -30,10 +29,12 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	{
 		protected.GET("/me", func(c *gin.Context) {
 			var u models.User
-			if err := db.First(&u, UserID(c)).Error; err != nil {
+			userID := UserID(c)
+			if err := db.First(&u, userID).Error; err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 				return
 			}
+			hub.clients[userID].online = true // ?cómo podríamos comprobar si el usuario estaba online sin que tenga que recargar la página??
 			c.JSON(http.StatusOK, u)
 		})
 		protected.POST("/chats", hub.createChat)

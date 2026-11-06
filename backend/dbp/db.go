@@ -22,6 +22,14 @@ const DB_TIMEOUT = 5
 
 // SELECT ---------------------------------------------------------------------
 
+func SelectUsersOfChat(ctx context.Context, db *gorm.DB, chatID uint) ([]models.User, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+	
+	usersInChat, err := gorm.G[models.User](db).Raw("SELECT u.id, u.username, u.alias FROM users AS u JOIN chat_user as c ON c.user = u.id WHERE c.chat = ?", chatID).Find(ctxWithTimeout)
+	return usersInChat, err
+}
+
 func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]models.Chat, []models.ChatView, error) { //! Optimizar las consultas
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
@@ -42,7 +50,7 @@ func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]mode
 		}
 
 		//2. Get the list of users inside said chat:
-		usersInChat, err := gorm.G[models.User](db).Raw("SELECT u.id, u.username, u.alias FROM users AS u JOIN chat_user as c ON c.user = u.id WHERE c.chat = ?", chatUserIsIn.ChatID).Find(ctx)
+		usersInChat, err := SelectUsersOfChat(ctx, db, chatUserIsIn.ChatID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -86,6 +94,19 @@ func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
 	}
 	return tableRegisters, err
 }
+
+func	SelectChatMsgs(ctx context.Context, db *gorm.DB, chatID uint) ([]models.ChatView, error) {
+
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+	var err error
+
+	chats, err := gorm.G[models.ChatView](db).Where("chat_id = ?", chatID).Find(ctxWithTimeout)
+
+	return chats, err
+}
+
 
 /* func	SelectChats(ctx context.Context, db *gorm.DB) ([]models.Chat, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)

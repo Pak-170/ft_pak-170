@@ -53,20 +53,34 @@ func	(h *Hub) createChat(c *gin.Context) {
 		return
 	}
 	h.chats[chatID] = make([]*Client, 0)
-	//h.chats[chatID] = append(h.chats[chatID], h.clients[ownerID.(uint)])
 
 	err = dbp.InsertUserInChat(c.Request.Context(), h.DB, chatID, ownerID.(uint))
 	if err != nil {
 		log.Printf("ERROR: Couldn't insert into DB -> %v\n", err)
 		return
 	}
-
 	for _, user := range chat.UserIDs {
 		err = dbp.InsertUserInChat(c.Request.Context(), h.DB, chatID, uint(user))
 		if err != nil {
 			log.Printf("ERROR: Couldn't insert into DB -> %v\n", err)
 			return
 		}
+	}
+
+	participants, err := dbp.SelectUsersOfChat(c.Request.Context(), h.DB, chatID)
+	if err != nil {
+		log.Printf("ERROR: DB -> %v\n", err)
+		return
+	}
+
+	var newChatNotification newChatNotification = newChatNotification{chat: &models.Chat{
+		ID: chatID, 
+		Name: chat.Name, 
+		Participants: participants,
+	}}
+
+	for _, user := range chat.UserIDs {
+		newChatNotification.notify(h.clients[user])
 	}
 	c.JSON(http.StatusOK, chat)
 }
@@ -107,17 +121,8 @@ func (h *Hub) handleWS(c *gin.Context) {
 		log.Printf("ERROR: Couldn't get userID\n")
 		return
 	}
-
-	//? Is this needed now that we use cookies?
-	// Then, we check if the user exists
-	var queryUser models.User
-	err = h.DB.First(&queryUser, userID).Error
-	if err != nil {
-		log.Printf("ERROR. USER %s DOESN'T EXISTS\n", userID)
-		return
-	}
-
-	var client Client = newClient(h, wsconn, &queryUser)
+	client := h.clients[userID.(uint)]
+	client.ws = wsconn
 
 	chatInfo, priorMsgs, err := dbp.SelectAllChatsOfUser(ctx, h.DB, client.info.ID)
 
@@ -125,9 +130,9 @@ func (h *Hub) handleWS(c *gin.Context) {
 		log.Printf("ERROR RETRIEVING OLS MSGS FOR USER %s\n", userID)
 		return
 	}
-	h.join <- &client
+	h.join <- client
 	go client.readFromWS(ctx)
 	go client.writeToWS(ctx)
-	h.sendPreviousMsgs(&chatInfo, &priorMsgs, &client)
+	h.sendPreviousMsgs(&chatInfo, &priorMsgs, client)
 }
 
