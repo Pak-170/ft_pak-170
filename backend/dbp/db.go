@@ -40,8 +40,8 @@ func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]mode
 		return nil, nil, err
 	}
 
-	var chatsMsgs	[]models.ChatView
-	var chats		[]models.Chat
+	var chatsMsgs	[]models.ChatView = make([]models.ChatView, 0)
+	var chats		[]models.Chat = make([]models.Chat, 0)
 	for _, chatUserIsIn := range chatUserRelation {
 		//1. Get the chat info:
 		chatInfo, err := gorm.G[models.Chat](db).Where("id = ?", chatUserIsIn.ChatID).First(ctx)
@@ -82,6 +82,19 @@ func	SelectChatIds(ctx context.Context, db *gorm.DB, userID int) ([]uint, error)
 	}
 	return chatIds, err
 }
+
+// func	SelectAnyWhere[T any](ctx context.Context, db *gorm.DB, where string) ([]T, error) {
+// 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+// 	defer cancel()
+
+// 	tableRegisters, err := gorm.G[T](db).Where(where).Find(ctxWithTimeout)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return tableRegisters, err
+// }
+
 
 func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)

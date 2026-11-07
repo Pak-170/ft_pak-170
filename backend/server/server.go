@@ -34,7 +34,9 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 				return
 			}
-			hub.clients[userID].online = true // ?cómo podríamos comprobar si el usuario estaba online sin que tenga que recargar la página??
+			if hub.clients[userID] != nil {
+				hub.clients[userID].online = true // ?cómo podríamos comprobar si el usuario estaba online sin que tenga que recargar la página??
+			}
 			c.JSON(http.StatusOK, u)
 		})
 		protected.POST("/chats", hub.createChat)

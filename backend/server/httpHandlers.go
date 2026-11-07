@@ -23,13 +23,22 @@ func (h *Hub) sendUsers(c *gin.Context) {
 }
 
 func (h *Hub) sendChats(c *gin.Context) {
-	chats, err := dbp.SelectAny[models.Chat](c.Request.Context(), h.DB)
+	userID, exits := c.Get("userID")
+	if exits != true {
+		return
+	}
+
+	chats, _, err := dbp.SelectAllChatsOfUser(c.Request.Context(), h.DB, userID.(uint))
 	if err != nil {
 		log.Printf("ERROR GETTING CHATS FROM DB: %v\n", err)
 		return
 	}
-	log.Println(chats)
-	c.JSON(http.StatusOK, chats)
+	// if chats == nil {
+	// 	c.JSON(http.StatusOK, make([]models.Chat, 0))
+	// } else {
+		c.JSON(http.StatusOK, chats)
+	//}
+	log.Printf("---> %v <---\n", chats)
 }
 
 
@@ -80,6 +89,7 @@ func	(h *Hub) createChat(c *gin.Context) {
 	}}
 
 	for _, user := range chat.UserIDs {
+		log.Printf("**** USER: %v\n", user)
 		newChatNotification.notify(h.clients[user])
 	}
 	c.JSON(http.StatusOK, chat)

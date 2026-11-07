@@ -1,15 +1,8 @@
 package server
 
 import (
-	// "context"
-	// "go_pakito/dbp"
 	"go_pakito/models"
 	"log"
-)
-
-const (
-	MSG = 1
-	NEWCHAT = 2
 )
 
 type Notification interface{
