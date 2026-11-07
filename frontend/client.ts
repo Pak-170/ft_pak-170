@@ -70,7 +70,10 @@ export async function connectWebSocket() {
     ws.onmessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as ChatMessage | ChatMessage[];
-
+        if (data === null) {
+          console.warn('[Client] Received null message.');
+          return;
+        }
         messages.update((currentMessages) => {
           if (Array.isArray(data)) {
             const existingMessages = new Set(

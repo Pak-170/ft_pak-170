@@ -3,7 +3,6 @@ package server
 import (
 	"gorm.io/gorm"
 	"go_pakito/models"
-//	"log"
 	"net/http"
 	"os"
 
@@ -20,7 +19,6 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "../frontend/public/favicon.png")
 
-	r.GET("/api/chat", hub.handleWS)
 
 	// --- autentication (publics) ---
 	r.POST("/api/register", Register(db))
@@ -31,12 +29,20 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 	{
 		protected.GET("/me", func(c *gin.Context) {
 			var u models.User
-			if err := db.First(&u, UserID(c)).Error; err != nil {
+			userID := UserID(c)
+			if err := db.First(&u, userID).Error; err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 				return
 			}
+			if hub.clients[userID] != nil {
+				hub.clients[userID].online = true // ?cómo podríamos comprobar si el usuario estaba online sin que tenga que recargar la página??
+			}
 			c.JSON(http.StatusOK, u)
 		})
+		protected.POST("/chats", hub.createChat)
+		protected.GET("/chats", hub.sendChats)
+		protected.GET("/users", hub.sendUsers)
+		protected.GET("/chat", hub.handleWS)
 		// Chat endpoints go in here
 	}
 
