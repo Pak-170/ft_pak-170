@@ -94,11 +94,16 @@
 </script>
 
 <div class="monitor-frame" class:vertical>
-  <img class="layer" src={borderImage} alt="" />
-  <img class="layer" src={currentLedImage} alt="" />
-  {#each keyImages as key, i}
-    <img class="layer" src={keyStates[i] ? key.on : key.off} alt="" />
-  {/each}
+  <img class="layer border-layer" src={borderImage} alt="" />
+
+  <div class="keys-layer">
+    {#each keyImages as key, i}
+      <img class="layer" src={keyStates[i] ? key.on : key.off} alt="" />
+    {/each}
+  </div>
+
+  <img class="layer leds-layer" src={currentLedImage} alt="" />
+
   <a
     class="key-hitbox key-1"
     href="#/"
@@ -156,9 +161,26 @@
     pointer-events: none;
   }
 
+  .border-layer {
+    z-index: 1;
+  }
+
+  .keys-layer {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .leds-layer {
+    z-index: 3;
+  }
+
   .key-hitbox {
     position: absolute;
-    z-index: 2;
+    z-index: 4;
     pointer-events: auto;
     border: none;
     cursor: pointer;
