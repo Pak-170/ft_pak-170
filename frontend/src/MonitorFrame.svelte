@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
 
   type LedState = 'all_off' | 'all_on' | 'led_1' | 'led_2' | 'led_3';
 
@@ -14,7 +14,6 @@
   let {
     hasError = false,
     ledState = 'all_off',
-    keyStates = [true, false, false, false],
     onKeyClick,
     vertical = false,
   }: Props = $props();
@@ -48,8 +47,30 @@
     },
   ];
 
+  let currentRoute = $state('/');
+  let isFullscreen = $state(false);
   let showErrorImage = $state(false);
   let interval: ReturnType<typeof setInterval> | undefined;
+
+  onMount(() => {
+    function updateState() {
+      currentRoute = window.location.hash.slice(1).split('?')[0] || '/';
+      isFullscreen = document.fullscreenElement !== null;
+    }
+    updateState();
+    window.addEventListener('hashchange', updateState);
+    document.addEventListener('fullscreenchange', updateState);
+    return () => {
+      window.removeEventListener('hashchange', updateState);
+      document.removeEventListener('fullscreenchange', updateState);
+    };
+  });
+  const currentKeyStates = $derived([
+    currentRoute === '/',
+    currentRoute === '/login',
+    currentRoute === '/chat',
+    isFullscreen,
+  ]);
 
   $effect(() => {
     if (hasError) {
@@ -98,7 +119,7 @@
 
   <div class="keys-layer">
     {#each keyImages as key, i}
-      <img class="layer" src={keyStates[i] ? key.on : key.off} alt="" />
+      <img class="layer" src={currentKeyStates[i] ? key.on : key.off} alt="" />
     {/each}
   </div>
 
