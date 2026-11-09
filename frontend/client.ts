@@ -1,7 +1,7 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 
 type ChatMessage = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ChatID: number;
   Username: string;
   Msg: string;
@@ -9,14 +9,14 @@ type ChatMessage = {
 };
 
 type AuthUser = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ID: number;
   username: string;
   alias: string | null;
 };
 
 type Chat = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ID: number;
   Name: string;
   Type: 'individual' | 'group';
@@ -36,6 +36,85 @@ export const messages = writable<ChatMessage[]>([]);
 export const currentUser = writable<AuthUser | null>(null);
 
 let ws: WebSocket | null = null;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.ChatID === 'number' &&
+    typeof value.Username === 'string' &&
+    typeof value.Msg === 'string' &&
+    typeof value.SendTime === 'string'
+  );
+}
+
+function isChat(value: unknown): value is Chat {
+  if (!isObject(value)) return false;
+
+  return (
+    typeof value.ID === 'number' &&
+    typeof value.Name === 'string' &&
+    (value.Type === 'individual' || value.Type === 'group') &&
+    Array.isArray(value.Participants)
+  );
+}
+
+function addMessages(newMessages: ChatMessage[]) {
+  messages.update((currentMessages) => {
+    const existingMessages = new Set(
+      currentMessages.map(
+        (msg) => `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`,
+      ),
+    );
+
+    const uniqueMessages = newMessages.filter((msg) => {
+      const key = `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`;
+      if (existingMessages.has(key)) return false;
+      existingMessages.add(key);
+      return true;
+    });
+
+    return [...currentMessages, ...uniqueMessages];
+  });
+}
+
+function updateChat(chat: Chat) {
+  chats.update((currentChats) => [
+    ...currentChats.filter((item) => item.ID !== chat.ID),
+    chat,
+  ]);
+}
+
+function handleIncomingData(data: unknown) {
+  if (data === null || data === undefined) {
+    console.warn('[Client] Ignoring null WebSocket data.');
+    return;
+  }
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      handleIncomingData(item);
+    }
+    return;
+  }
+
+  if (isChatMessage(data)) {
+    addMessages([data]);
+    console.log('[Client] Message received:', data);
+    return;
+  }
+
+  if (isChat(data)) {
+    updateChat(data);
+    console.log('[Client] Chat received:', data);
+    return;
+  }
+
+  console.warn('[Client] Unknown WebSocket data:', data);
+}
 
 export async function connectWebSocket() {
   if (
@@ -59,42 +138,18 @@ export async function connectWebSocket() {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    ws = new WebSocket(
-      `${protocol}//${window.location.host}/api/chat?user-id=${user.ID}`,
-    );
+    ws = new WebSocket(`${protocol}//${window.location.host}/api/chat`);
 
     ws.onopen = () => {
-      console.log('[Client] connected.');
+      console.log('[Client] Connected.');
     };
 
     ws.onmessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data) as ChatMessage | ChatMessage[];
-        if (data === null) {
-          console.warn('[Client] Received null message.');
-          return;
-        }
-        messages.update((currentMessages) => {
-          if (Array.isArray(data)) {
-            const existingMessages = new Set(
-              currentMessages.map(
-                (msg) =>
-                  `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`,
-              ),
-            );
-            const newMessages = data.filter(
-              (msg) =>
-                !existingMessages.has(
-                  `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`,
-                ),
-            );
-            return [...currentMessages, ...newMessages];
-          }
-          return [...currentMessages, data];
-        });
-        console.log('[Client] Messages received:', data);
-      } catch {
-        console.error('[Client] Invalid message received.');
+        const data: unknown = JSON.parse(event.data);
+        handleIncomingData(data);
+      } catch (error) {
+        console.error('[Client] Invalid WebSocket JSON:', error);
       }
     };
 
@@ -103,11 +158,11 @@ export async function connectWebSocket() {
     };
 
     ws.onclose = () => {
-      console.log('[Client] disconnected.');
+      console.log('[Client] Disconnected.');
       ws = null;
     };
   } catch (error) {
-    console.error('[Client] Could not connect: ', error);
+    console.error('[Client] Could not connect:', error);
     currentUser.set(null);
   }
 }
@@ -121,9 +176,10 @@ export async function fetchUsers(): Promise<AuthUser[]> {
     throw new Error('Could not load users');
   }
 
-  const data = (await response.json()) as AuthUser[];
-  users.set(data);
+  const result: unknown = await response.json();
+  const data = Array.isArray(result) ? (result as AuthUser[]) : [];
 
+  users.set(data);
   return data;
 }
 
@@ -136,9 +192,10 @@ export async function fetchChats(): Promise<Chat[]> {
     throw new Error('Could not load chats');
   }
 
-  const data = (await response.json()) as Chat[];
-  chats.set(data);
+  const result: unknown = await response.json();
+  const data = Array.isArray(result) ? (result as Chat[]) : [];
 
+  chats.set(data);
   return data;
 }
 
@@ -156,14 +213,41 @@ export async function createChat(data: CreateChatData): Promise<Chat> {
     throw new Error('Could not create chat');
   }
 
-  const chat = (await response.json()) as Chat;
+  const updatedChats = await fetchChats();
 
-  chats.update((currentChats) => [
-    ...currentChats.filter((item) => item.ID !== chat.ID),
-    chat,
-  ]);
+  const currentUserID = get(currentUser)?.ID;
 
-  return chat;
+  const expectedParticipants = [
+    ...new Set([
+      ...(currentUserID !== undefined ? [currentUserID] : []),
+      ...data.userIDs,
+    ]),
+  ].sort((a, b) => a - b);
+
+  const matchingChats = updatedChats
+    .filter((chat) => {
+      const participantIDs = chat.Participants.map(
+        (participant) => participant.ID,
+      ).sort((a, b) => a - b);
+
+      return (
+        chat.Type === data.type &&
+        chat.Name === (data.name ?? '') &&
+        participantIDs.length === expectedParticipants.length &&
+        participantIDs.every((id, index) => id === expectedParticipants[index])
+      );
+    })
+    .sort((a, b) => b.ID - a.ID);
+
+  const createdChat = matchingChats[0];
+
+  if (!createdChat) {
+    throw new Error('Chat was created, but could not be found.');
+  }
+
+  updateChat(createdChat);
+
+  return createdChat;
 }
 
 export function sendMessage(chatID: number, username: string, message: string) {
@@ -182,5 +266,5 @@ export function sendMessage(chatID: number, username: string, message: string) {
 
   ws.send(JSON.stringify(data));
 
-  messages.update((currentMessages) => [...currentMessages, data]);
+  addMessages([data]);
 }

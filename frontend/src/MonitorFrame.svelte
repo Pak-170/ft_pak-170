@@ -8,6 +8,7 @@
     ledState?: LedState;
     keyStates?: boolean[];
     onKeyClick?: (index: number) => void;
+    vertical?: boolean;
   };
 
   let {
@@ -15,6 +16,7 @@
     ledState = 'all_off',
     keyStates = [true, false, false, false],
     onKeyClick,
+    vertical = false,
   }: Props = $props();
 
   const borderImage = '/border.png';
@@ -91,7 +93,7 @@
   }
 </script>
 
-<div class="monitor-frame">
+<div class="monitor-frame" class:vertical>
   <img class="layer" src={borderImage} alt="" />
   <img class="layer" src={currentLedImage} alt="" />
   {#each keyImages as key, i}
@@ -134,6 +136,16 @@
     z-index: 10000;
     pointer-events: none;
     overflow: hidden;
+  }
+
+  .monitor-frame.vertical {
+    width: 177.7778%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
   }
 
   .layer {

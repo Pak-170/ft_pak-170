@@ -1,7 +1,8 @@
-<script>
+<script lang="ts">
   import Router from 'svelte-spa-router';
+  import { onMount } from 'svelte';
 
-  import Home from './Home.svelte';
+  import Home from './GameChat.svelte';
   import Login from './Login.svelte';
   import Chat from './Chat.svelte';
   import MonitorFrame from './MonitorFrame.svelte';
@@ -10,7 +11,20 @@
 
   let keyStates = $state([true, false, false, false]);
 
-  function activateKey(index) {
+  let isGameMode = $state(false);
+
+  onMount(() => {
+    function updateRoute() {
+      const route = window.location.hash.slice(1).split('?')[0] || '/';
+      isGameMode = route === '/';
+    }
+    updateRoute();
+    window.addEventListener('hashchange', updateRoute);
+    return () => {
+      window.removeEventListener('hashchange', updateRoute);
+    };
+  });
+  function activateKey(index: number) {
     keyStates = keyStates.map((_, i) => i === index);
   }
 
@@ -21,17 +35,19 @@
   };
 </script>
 
-<div class="monitor-container">
-  <div class="web-content">
+<div class="monitor-container" class:game-mode={isGameMode}>
+  <div class="web-content" class:game-mode={isGameMode}>
     <Router {routes} />
   </div>
 
-  <MonitorFrame
-    hasError={$loginHasError || $passwordMismatch}
-    ledState="all_off"
-    {keyStates}
-    onKeyClick={activateKey}
-  />
+  {#if !isGameMode}
+    <MonitorFrame
+      hasError={$loginHasError || $passwordMismatch}
+      ledState="all_off"
+      {keyStates}
+      onKeyClick={activateKey}
+    />
+  {/if}
 </div>
 
 <style>
@@ -39,7 +55,7 @@
   :global(body) {
     margin: 0;
     width: 100%;
-    min-height: 100%;
+    height: 100%;
   }
 
   :global(body) {
@@ -68,5 +84,19 @@
     height: 84%;
     overflow: hidden;
     z-index: 1;
+  }
+
+  .monitor-container.game-mode {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    aspect-ratio: auto;
+  }
+
+  .web-content.game-mode {
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 </style>
