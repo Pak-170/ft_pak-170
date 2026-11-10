@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import { loginLoading, loginSuccess } from './stores/loginStatus.ts';
 
   type Props = {
     hasError?: boolean;
@@ -48,16 +49,20 @@
   });
   const currentKeyStates = $derived([
     currentRoute === '/',
-    currentRoute === '/login',
+    currentRoute === '/login' || currentRoute === '/profile',
     currentRoute === '/chat',
     isFullscreen,
   ]);
   const currentLedImage = $derived(
-    hasError
-      ? showErrorImage
-        ? ledImages.led_3
-        : ledImages.all_off
-      : ledImages.all_off,
+    $loginLoading
+      ? ledImages.led_2
+      : $loginSuccess
+        ? ledImages.led_1
+        : hasError
+          ? showErrorImage
+            ? ledImages.led_3
+            : ledImages.all_off
+          : ledImages.all_off,
   );
 
   $effect(() => {

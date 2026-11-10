@@ -117,6 +117,16 @@ export async function fetchChats() {
   chats.set(data);
 }
 
+export function disconnectWebSocket() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  users.set([]);
+  chats.set([]);
+  messages.set([]);
+}
+
 export async function createChat(data: CreateChatData): Promise<Chat> {
   const response = await fetch('/api/chats', {
     method: 'POST',

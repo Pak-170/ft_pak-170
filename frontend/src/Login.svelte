@@ -1,6 +1,11 @@
 <script lang="ts">
-  import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
-  import { currentUser } from '../client';
+  import {
+    loginHasError,
+    passwordMismatch,
+    loginLoading,
+    loginSuccess,
+  } from './stores/loginStatus.ts';
+  import { currentUser, disconnectWebSocket } from '../client';
   import { onMount } from 'svelte';
 
   let password = $state('');
@@ -41,6 +46,7 @@
     errorMessage = '';
     successMessage = '';
     $loginHasError = false;
+    $loginSuccess = false;
 
     if (register && password !== confPassword) {
       errorMessage = 'ACCESS CODES DO NOT MATCH';
@@ -49,6 +55,10 @@
     }
 
     loading = true;
+    $loginLoading = true;
+    const startTime = Date.now();
+    let redirectAfterLoading = false;
+    let showSuccessLed = false;
 
     try {
       const endpoint = register ? '/api/register' : '/api/login';
@@ -85,32 +95,62 @@
         return;
       }
 
-      successMessage = register
-        ? 'ACCOUNT CREATED SUCCESSFULLY'
-        : 'LOGIN SUCCESSFUL';
+      if (register) {
+        successMessage = 'ACCOUNT CREATED SUCCESSFULLY';
+        showSuccessLed = true;
+        register = false;
+        password = '';
+        confPassword = '';
+        username = '';
+        const logoutResponse = await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!logoutResponse.ok) {
+          errorMessage = 'ACCOUNT CREATED, BUT SESSION COULD NOT BE CLOSED';
+          $loginHasError = true;
+          showSuccessLed = false;
+        } else {
+          currentUser.set(null);
+          disconnectWebSocket();
+        }
+      } else {
+        const meResponse = await fetch('/api/me', {
+          credentials: 'include',
+        });
 
-      const meResponse = await fetch('/api/me', {
-        credentials: 'include',
-      });
+        if (!meResponse.ok) {
+          errorMessage = 'SESSION CREATED, BUT USER COULD NOT BE LOADED';
+          $loginHasError = true;
+          return;
+        }
 
-      if (!meResponse.ok) {
-        errorMessage = 'SESSION CREATED, BUT USER COULD NOT BE LOADED';
-        $loginHasError = true;
-        return;
+        const user = await meResponse.json();
+        currentUser.set(user);
+        successMessage = 'LOGIN SUCCESSFUL';
+        showSuccessLed = true;
+        redirectAfterLoading = true;
+
+        console.log('Authenticated user:', user);
       }
-
-      const user = await meResponse.json();
-      currentUser.set(user);
-
-      console.log('Authenticated user:', user);
-
-      window.location.href = '#/';
     } catch (error) {
       console.error('Authentication error:', error);
       errorMessage = 'CONNECTION ERROR';
       $loginHasError = true;
     } finally {
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 2000 - elapsed);
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
       loading = false;
+      $loginLoading = false;
+      if (showSuccessLed) {
+        $loginSuccess = true;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        $loginSuccess = false;
+      }
+    }
+    if (redirectAfterLoading) {
+      window.location.href = '#/';
     }
   }
 </script>
@@ -188,6 +228,8 @@
         successMessage = '';
         confPassword = '';
         $loginHasError = false;
+        $loginSuccess = false;
+        $loginLoading = false;
       }}
     >
       {register ? '>> EXISTING USER // LOGIN' : '>> NEW USER // REGISTER'}

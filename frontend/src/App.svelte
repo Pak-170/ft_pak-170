@@ -4,14 +4,17 @@
   import Home from './GameChat.svelte';
   import Login from './Login.svelte';
   import Chat from './Chat.svelte';
+  import Profile from './Profile.svelte';
   import MonitorFrame from './MonitorFrame.svelte';
 
+  import { currentUser } from '../client';
   import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
 
   let displayedRoute = $state('/');
   let isGameMode = $state(false);
   let targetGameMode = $state(false);
   let isTransitioning = $state(false);
+  let authChecked = $state(false);
   let pendingRoute = '/';
   let transitionTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -20,7 +23,16 @@
   }
 
   function updateRoute() {
-    const nextRoute = getRoute();
+    let nextRoute = getRoute();
+    if (!authChecked) return;
+    if (nextRoute === '/login' && $currentUser) {
+      window.location.hash = '#/profile';
+      return;
+    }
+    if (nextRoute === '/profile' && !$currentUser) {
+      window.location.hash = '#/login';
+      return;
+    }
     const nextGameMode = nextRoute === '/';
     if (nextRoute === displayedRoute && !isTransitioning) {
       return;
@@ -45,11 +57,37 @@
   }
 
   onMount(() => {
-    const initialRoute = getRoute();
-    displayedRoute = initialRoute;
-    isGameMode = initialRoute === '/';
-    targetGameMode = isGameMode;
     window.addEventListener('hashchange', updateRoute);
+    async function checkSession() {
+      try {
+        const response = await fetch('/api/me', {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const user = await response.json();
+          currentUser.set(user);
+        } else {
+          currentUser.set(null);
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+        currentUser.set(null);
+      }
+      authChecked = true;
+      const route = getRoute();
+      if (route === '/login' && $currentUser) {
+        window.location.hash = '#/profile';
+        return;
+      }
+      if (route === '/profile' && !$currentUser) {
+        window.location.hash = '#/login';
+        return;
+      }
+      displayedRoute = route;
+      isGameMode = route === '/';
+      targetGameMode = isGameMode;
+    }
+    void checkSession();
     return () => {
       window.removeEventListener('hashchange', updateRoute);
     };
@@ -68,12 +106,16 @@
     class:game-mode={isGameMode}
     class:transition-hidden={isTransitioning}
   >
-    {#if displayedRoute === '/'}
-      <Home />
-    {:else if displayedRoute === '/login'}
-      <Login />
-    {:else if displayedRoute === '/chat'}
-      <Chat />
+    {#if authChecked}
+      {#if displayedRoute === '/'}
+        <Home />
+      {:else if displayedRoute === '/login'}
+        <Login />
+      {:else if displayedRoute === '/profile'}
+        <Profile />
+      {:else if displayedRoute === '/chat'}
+        <Chat />
+      {/if}
     {/if}
   </div>
 
@@ -85,13 +127,6 @@
 </div>
 
 <style>
-  :global(html),
-  :global(body) {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   :global(body) {
     min-height: 100vh;
     display: grid;
