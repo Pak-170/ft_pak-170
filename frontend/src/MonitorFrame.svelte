@@ -1,26 +1,19 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
 
-  type LedState = 'all_off' | 'all_on' | 'led_1' | 'led_2' | 'led_3';
-
   type Props = {
     hasError?: boolean;
-    ledState?: LedState;
-    keyStates?: boolean[];
-    onKeyClick?: (index: number) => void;
     vertical?: boolean;
+    transitioning?: boolean;
   };
 
   let {
     hasError = false,
-    ledState = 'all_off',
-    onKeyClick,
     vertical = false,
+    transitioning = false,
   }: Props = $props();
 
-  const borderImage = '/border.png';
-
-  const ledImages: Record<LedState, string> = {
+  const ledImages = {
     all_off: '/leds/all_off.png',
     all_on: '/leds/all_on.png',
     led_1: '/leds/led_1_on.png',
@@ -29,22 +22,10 @@
   };
 
   const keyImages = [
-    {
-      off: '/teclas/key_1_off.png',
-      on: '/teclas/key_1_on.png',
-    },
-    {
-      off: '/teclas/key_2_off.png',
-      on: '/teclas/key_2_on.png',
-    },
-    {
-      off: '/teclas/key_3_off.png',
-      on: '/teclas/key_3_on.png',
-    },
-    {
-      off: '/teclas/key_4_off.png',
-      on: '/teclas/key_4_on.png',
-    },
+    { off: '/teclas/key_1_off.png', on: '/teclas/key_1_on.png' },
+    { off: '/teclas/key_2_off.png', on: '/teclas/key_2_on.png' },
+    { off: '/teclas/key_3_off.png', on: '/teclas/key_3_on.png' },
+    { off: '/teclas/key_4_off.png', on: '/teclas/key_4_on.png' },
   ];
 
   let currentRoute = $state('/');
@@ -71,12 +52,18 @@
     currentRoute === '/chat',
     isFullscreen,
   ]);
+  const currentLedImage = $derived(
+    hasError
+      ? showErrorImage
+        ? ledImages.led_3
+        : ledImages.all_off
+      : ledImages.all_off,
+  );
 
   $effect(() => {
     if (hasError) {
       if (interval === undefined) {
         showErrorImage = true;
-
         interval = setInterval(() => {
           showErrorImage = !showErrorImage;
         }, 1000);
@@ -86,7 +73,6 @@
         clearInterval(interval);
         interval = undefined;
       }
-
       showErrorImage = false;
     }
   });
@@ -97,25 +83,17 @@
     }
   });
 
-  const currentLedImage = $derived(
-    hasError
-      ? showErrorImage
-        ? ledImages.led_3
-        : ledImages.all_off
-      : ledImages[ledState],
-  );
   function handleFullscreen() {
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
       document.documentElement.requestFullscreen();
     }
-    onKeyClick?.(3);
   }
 </script>
 
-<div class="monitor-frame" class:vertical>
-  <img class="layer border-layer" src={borderImage} alt="" />
+<div class="monitor-frame" class:vertical class:transitioning>
+  <img class="layer border-layer" src="/border.png" alt="" />
 
   <div class="keys-layer">
     {#each keyImages as key, i}
@@ -125,24 +103,22 @@
 
   <img class="layer leds-layer" src={currentLedImage} alt="" />
 
-  <a
-    class="key-hitbox key-1"
-    href="#/"
-    aria-label="Home"
-    onclick={() => onKeyClick?.(0)}
-  ></a>
-  <a
-    class="key-hitbox key-2"
-    href="#/login"
-    aria-label="Login"
-    onclick={() => onKeyClick?.(1)}
-  ></a>
-  <a
-    class="key-hitbox key-3"
-    href="#/chat"
-    aria-label="Chat"
-    onclick={() => onKeyClick?.(2)}
-  ></a>
+  {#if transitioning}
+    <video
+      class="transition-video"
+      src="/transition.mp4"
+      autoplay
+      muted
+      playsinline
+    ></video>
+  {/if}
+
+  <a class="key-hitbox key-1" href="#/" aria-label="Home"></a>
+
+  <a class="key-hitbox key-2" href="#/login" aria-label="Login"></a>
+
+  <a class="key-hitbox key-3" href="#/chat" aria-label="Chat"></a>
+
   <button
     class="key-hitbox key-4"
     type="button"
@@ -153,25 +129,31 @@
 
 <style>
   .monitor-frame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    aspect-ratio: 16 / 9;
     display: grid;
     place-items: center;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transform-origin: center;
     z-index: 10000;
     pointer-events: none;
-    overflow: hidden;
+    overflow: visible;
+    transition: none;
+  }
+
+  .monitor-frame.transitioning {
+    transition:
+      width 3s cubic-bezier(0.65, 0, 0.35, 1),
+      transform 3s cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   .monitor-frame.vertical {
-    width: 177.7778%;
-    height: auto;
-    aspect-ratio: 16 / 9;
-    inset: auto;
-    top: 50%;
+    width: 100dvh;
     left: 50%;
-    transform: translate(-50%, -50%) rotate(90deg);
+    transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
   }
 
   .layer {
@@ -199,9 +181,20 @@
     z-index: 3;
   }
 
+  .transition-video {
+    position: absolute;
+    left: 5%;
+    top: 7.5%;
+    width: 80%;
+    height: 84%;
+    object-fit: fill;
+    z-index: 0;
+    pointer-events: none;
+  }
+
   .key-hitbox {
     position: absolute;
-    z-index: 4;
+    z-index: 5;
     pointer-events: auto;
     border: none;
     cursor: pointer;
