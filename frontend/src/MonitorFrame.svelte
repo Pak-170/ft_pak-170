@@ -6,12 +6,16 @@
     hasError?: boolean;
     vertical?: boolean;
     transitioning?: boolean;
+    settingsOpen?: boolean;
+    onSettings?: () => void;
   };
 
   let {
     hasError = false,
     vertical = false,
     transitioning = false,
+    settingsOpen = false,
+    onSettings,
   }: Props = $props();
 
   const ledImages = {
@@ -50,7 +54,7 @@
   const currentKeyStates = $derived([
     currentRoute === '/',
     currentRoute === '/login' || currentRoute === '/profile',
-    currentRoute === '/chat',
+    settingsOpen,
     isFullscreen,
   ]);
   const currentLedImage = $derived(
@@ -122,7 +126,13 @@
 
   <a class="key-hitbox key-2" href="#/login" aria-label="Login"></a>
 
-  <a class="key-hitbox key-3" href="#/chat" aria-label="Chat"></a>
+  <button
+    class="key-hitbox key-3"
+    type="button"
+    aria-label="Settings"
+    aria-pressed={settingsOpen}
+    onclick={onSettings}
+  ></button>
 
   <button
     class="key-hitbox key-4"

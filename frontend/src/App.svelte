@@ -5,11 +5,13 @@
   import Login from './Login.svelte';
   import Chat from './Chat.svelte';
   import Profile from './Profile.svelte';
+  import SettingsModal from './SettingsModal.svelte';
   import MonitorFrame from './MonitorFrame.svelte';
 
   import { currentUser } from '../client';
   import { loginHasError, passwordMismatch } from './stores/loginStatus.ts';
 
+  let settingsOpen = $state(false);
   let displayedRoute = $state('/');
   let isGameMode = $state(false);
   let targetGameMode = $state(false);
@@ -17,6 +19,10 @@
   let authChecked = $state(false);
   let pendingRoute = '/';
   let transitionTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  function toggleSettings() {
+    settingsOpen = !settingsOpen;
+  }
 
   function getRoute() {
     return window.location.hash.slice(1).split('?')[0] || '/';
@@ -33,10 +39,11 @@
       window.location.hash = '#/login';
       return;
     }
-    const nextGameMode = nextRoute === '/';
-    if (nextRoute === displayedRoute && !isTransitioning) {
-      return;
+    if (nextRoute !== displayedRoute) {
+      settingsOpen = false;
     }
+    const nextGameMode = nextRoute === '/';
+    if (nextRoute === displayedRoute && !isTransitioning) return;
     if (nextGameMode === isGameMode && !isTransitioning) {
       displayedRoute = nextRoute;
       return;
@@ -117,12 +124,17 @@
         <Chat />
       {/if}
     {/if}
+    {#if settingsOpen}
+      <SettingsModal onClose={() => (settingsOpen = false)} />
+    {/if}
   </div>
 
   <MonitorFrame
     hasError={$loginHasError || $passwordMismatch}
     vertical={targetGameMode}
     transitioning={isTransitioning}
+    {settingsOpen}
+    onSettings={toggleSettings}
   />
 </div>
 
