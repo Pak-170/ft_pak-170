@@ -27,8 +27,6 @@
   let search = '';
   let selectedUsers: ChatUser[] = [];
   let groupName = '';
-
-  let loadingUsers = false;
   let creatingChat = false;
   let errorMessage = '';
 
@@ -62,6 +60,15 @@
   );
 
   $: selectedChat = $chats.find((chat) => chat.ID === selectedChatID);
+
+  $: otherParticipant = selectedChat?.Participants?.find(
+    (user) => user.ID !== $currentUser?.ID,
+  );
+
+  $: selectedChatName =
+    selectedChat?.Type === 'individual'
+      ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
+      : selectedChat?.Name || `Chat ${selectedChatID}`;
 
   $: if (selectedChatID === null && chatIDs.length > 0) {
     selectedChatID = chatIDs[0];
@@ -179,7 +186,15 @@
           class:active={selectedChatID === chat.ID}
           onclick={() => selectChat(chat.ID)}
         >
-          {chat.Name || `Chat ${chat.ID}`}
+          {#if chat.Type === 'individual'}
+            {chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
+              ?.alias ||
+              chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
+                ?.username ||
+              'Private Chat'}
+          {:else}
+            {chat.Name || `Chat ${chat.ID}`}
+          {/if}
         </button>
       {/each}
     </aside>
@@ -187,9 +202,8 @@
     <div class="chat">
       {#if selectedChatID !== null}
         <div class="header">
-          <h1>{selectedChat?.Name || `Chat ${selectedChatID}`}</h1>
+          <h1>{selectedChatName}</h1>
         </div>
-
         <div class="messages" bind:this={messagesContainer}>
           {#each selectedMessages as msg, i (`${msg.ChatID}-${msg.SendTime}-${i}`)}
             <div class="message" class:own-message={msg.Username === username}>
@@ -225,278 +239,191 @@
       {/if}
     </div>
   </div>
-</div>
 
-{#if showNewChat}
-  <div
-    class="modal-overlay"
-    role="presentation"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) showNewChat = false;
-    }}
-  >
+  {#if showNewChat}
     <div
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
+      class="modal-overlay"
+      role="presentation"
+      onclick={(e) => {
+        if (e.target === e.currentTarget) showNewChat = false;
+      }}
     >
-      <div class="modal-header">
-        <h2 id="modal-title">New Chat</h2>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <div class="modal-header">
+          <h2 id="modal-title">New Chat</h2>
 
-        <button
-          type="button"
-          onclick={() => (showNewChat = false)}
-          aria-label="Close"
-          title="Close"
-        >
-          x
-        </button>
-      </div>
-
-      <div class="chat-type">
-        <button
-          type="button"
-          class:active={chatType === 'private'}
-          onclick={() => {
-            chatType = 'private';
-            selectedUsers = [];
-            errorMessage = '';
-          }}
-        >
-          Private
-        </button>
-
-        <button
-          type="button"
-          class:active={chatType === 'group'}
-          onclick={() => {
-            chatType = 'group';
-            selectedUsers = [];
-            errorMessage = '';
-          }}
-        >
-          Group
-        </button>
-      </div>
-
-      {#if chatType === 'group'}
-        <input
-          class="group-name"
-          aria-label="Group name"
-          placeholder="Group Name"
-          bind:value={groupName}
-        />
-      {/if}
-
-      <input
-        class="user-search"
-        aria-label="Search users"
-        placeholder="Search users..."
-        bind:value={search}
-      />
-
-      {#if errorMessage}
-        <p role="alert">{errorMessage}</p>
-      {/if}
-
-      <div class="user-list">
-        {#each filteredUsers as user (user.ID)}
           <button
             type="button"
-            class:selected={selectedUsers.some((u) => u.ID === user.ID)}
-            aria-pressed={selectedUsers.some((u) => u.ID === user.ID)}
-            onclick={() => toggleUser(user)}
+            onclick={() => (showNewChat = false)}
+            aria-label="Close"
+            title="Close"
           >
-            <span>
-              {user.username.toUpperCase()}
-            </span>
-
-            <span>{user.alias || user.username}</span>
-
-            <span aria-hidden="true">
-              {selectedUsers.some((u) => u.ID === user.ID) ? '✓' : ''}
-            </span>
+            x
           </button>
-        {:else}
-          <p class="empty-users">No users available.</p>
-        {/each}
-      </div>
+        </div>
 
-      <div class="modal-actions">
-        <button type="button" onclick={() => (showNewChat = false)}>
-          Cancel
-        </button>
+        <div class="chat-type">
+          <button
+            type="button"
+            class:active={chatType === 'private'}
+            onclick={() => {
+              chatType = 'private';
+              selectedUsers = [];
+              errorMessage = '';
+            }}
+          >
+            Private
+          </button>
 
-        <button
-          type="button"
-          disabled={creatingChat ||
-            selectedUsers.length === 0 ||
-            (chatType === 'group' && !groupName.trim())}
-          onclick={createNewChat}
-        >
-          {creatingChat ? 'Creating...' : 'Create Chat'}
-        </button>
+          <button
+            type="button"
+            class:active={chatType === 'group'}
+            onclick={() => {
+              chatType = 'group';
+              selectedUsers = [];
+              errorMessage = '';
+            }}
+          >
+            Group
+          </button>
+        </div>
+
+        {#if chatType === 'group'}
+          <input
+            class="group-name"
+            aria-label="Group name"
+            placeholder="Group Name"
+            bind:value={groupName}
+          />
+        {/if}
+
+        <input
+          class="user-search"
+          aria-label="Search users"
+          placeholder="Search users..."
+          bind:value={search}
+        />
+
+        {#if errorMessage}
+          <p role="alert">{errorMessage}</p>
+        {/if}
+
+        <div class="user-list">
+          {#each filteredUsers as user (user.ID)}
+            <button
+              type="button"
+              class:selected={selectedUsers.some((u) => u.ID === user.ID)}
+              aria-pressed={selectedUsers.some((u) => u.ID === user.ID)}
+              onclick={() => toggleUser(user)}
+            >
+              <span>{user.username.toUpperCase()}</span>
+              <span>{user.alias || user.username}</span>
+              <span aria-hidden="true">
+                {selectedUsers.some((u) => u.ID === user.ID) ? '✓' : ''}
+              </span>
+            </button>
+          {:else}
+            <p class="empty-users">No users available.</p>
+          {/each}
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" onclick={() => (showNewChat = false)}>
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            disabled={creatingChat ||
+              selectedUsers.length === 0 ||
+              (chatType === 'group' && !groupName.trim())}
+            onclick={createNewChat}
+          >
+            {creatingChat ? 'Creating...' : 'Create Chat'}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style lang="scss">
-  .scanlines {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 10;
-  }
-
   .monitor-content {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    box-sizing: border-box;
     overflow: hidden;
+    container-type: size;
   }
 
-  .modal-overlay {
-    position: fixed;
+  .scanlines {
+    position: absolute;
     inset: 0;
     z-index: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.8);
-  }
-
-  .modal {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    max-width: 450px;
-    max-height: 80dvh;
-    padding: 25px;
-    overflow-y: auto;
-    background: var(--surface);
-    border: 1px solid var(--green-light);
-    box-shadow: 0 0 20px var(--green-dark);
-  }
-
-  .modal h2,
-  .sidebar h2 {
-    margin-top: 0;
-    color: var(--green-bright);
-  }
-
-
-  .chat-type,
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-  }
-
-  .chat-type button {
-    flex: 1;
-    padding: 10px;
-  }
-
-  .user-list {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--green-dark);
-  }
-
-  .user-list button {
-    padding: 12px;
-    text-align: left;
-    border: 0;
-    border-bottom: 1px solid var(--green-dark);
-  }
-
-  .user-list button:last-child {
-    border-bottom: 0;
-  }
-
-  .modal-actions {
-    justify-content: flex-end;
-  }
-
-  .modal-actions button {
-    padding: 10px 15px;
-  }
-
-  .modal-actions button:last-child {
-    border-color: var(--green-light);
-    color: var(--green-bright);
-  }
-
-  .modal-actions button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
   }
 
   .chat-layout {
+    padding: 12% 12% 12% 12%;
     display: flex;
     width: 100%;
     height: 100%;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
     background: var(--black);
-    color: var(--green);
   }
 
   .sidebar {
-    flex: 0 0 15%;
-    min-width: 150px;
-    padding: 20px;
+    flex: 0 0 28%;
+    min-width: 0;
+    padding: 2cqh 2cqw;
     overflow-y: auto;
-    border-right: 1px solid var(--green-dark);
+    overflow-x: hidden;
     background: var(--surface);
+    border-right: 1px solid var(--green-dark);
+  }
+
+  .sidebar h2 {
+    color: var(--green-bright);
+    font-size: clamp(12px, 3cqw, 22px);
   }
 
   .sidebar button {
     width: 100%;
-    padding: 12px;
     margin-bottom: 8px;
+    padding: 2cqh 2cqw;
     text-align: left;
+    font-size: clamp(10px, 2.5cqw, 18px);
   }
 
   .chat {
     display: flex;
     flex: 1;
     flex-direction: column;
-    width: 0;
-    min-width: 0;
-    min-height: 0;
     height: 100%;
-    padding: 30px;
+    padding: 2cqh 2cqw;
     overflow: hidden;
-    background: var(--black);
-    color: var(--green);
   }
 
   .header {
-    flex-shrink: 0;
-    padding: 15px;
+    padding: 2cqh 2cqw;
     background: var(--surface);
     border: 1px solid var(--terminal-border);
-    box-shadow:
-      inset 0 0 15px var(--scanline),
-      0 0 8px var(--scanline-glow);
+    box-shadow: 0 0 8px var(--scanline-glow);
+  }
+
+  .header h1 {
+    font-size: clamp(12px, 3cqw, 22px);
   }
 
   .messages {
     display: flex;
     flex: 1;
     flex-direction: column;
-    min-height: 0;
-    padding: 12px 16px;
+    padding: 2cqh 2cqw;
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid var(--green-dark);
@@ -505,10 +432,10 @@
   }
 
   .message {
-    max-width: 70%;
-    padding: 10px 15px;
+    max-width: 95%;
+    padding: 2cqh 2cqw;
     border-bottom: 1px dashed var(--green-dark);
-    overflow-wrap: anywhere;
+    font-size: clamp(10px, 2.5cqw, 18px);
   }
 
   .message.own-message {
@@ -533,13 +460,11 @@
   }
 
   .chat form {
-    flex-shrink: 0;
-    margin-top: 15px;
+    margin-top: 8px;
   }
 
   .chat form input {
-    padding: 15px;
-    margin-bottom: 5dvh;
+    padding: 2cqh 2cqw;
     box-shadow: inset 0 0 10px var(--scanline);
   }
 
@@ -552,6 +477,107 @@
   .new-chat {
     border-color: var(--green-light);
     color: var(--green-bright);
-    background-color: var(--black);
+    background: var(--black);
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 12%;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .modal {
+    display: flex;
+    flex-direction: column;
+    gap: 2cqh;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    padding: 3%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--green-light);
+    box-shadow: 0 0 20px var(--green-dark);
+  }
+
+  .modal * {
+    font-size: clamp(10px, 2.4cqw, 20px);
+  }
+
+  .modal h2 {
+    margin-top: 0;
+    color: var(--green-bright);
+    font-size: clamp(13px, 3cqw, 24px);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2cqw;
+  }
+
+  .chat-type,
+  .modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2cqw;
+  }
+
+  .chat-type button {
+    flex: 1;
+    padding: 2cqh 2cqw;
+  }
+
+  .modal input {
+    min-width: 0;
+  }
+
+  .user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 30cqh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--green-dark);
+  }
+
+  .user-list button {
+    max-width: 100%;
+    padding: 2cqh 2cqw;
+    text-align: left;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid var(--green-dark);
+  }
+
+  .empty-users {
+    padding: 2cqw;
+  }
+
+  .modal-actions {
+    justify-content: flex-end;
+  }
+
+  .modal-actions button {
+    max-width: 100%;
+    padding: 2cqh 2cqw;
+  }
+
+  .modal-actions button:last-child {
+    border-color: var(--green-light);
+    color: var(--green-bright);
+  }
+
+  .modal-actions button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 </style>

@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 type ChatMessage = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ChatID: number;
   Username: string;
   Msg: string;
@@ -9,14 +9,14 @@ type ChatMessage = {
 };
 
 type AuthUser = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ID: number;
   username: string;
   alias: string | null;
 };
 
 type Chat = {
-  infoType: 'chat';
+  infoType?: 'chat';
   ID: number;
   Name: string;
   Type: 'individual' | 'group';
@@ -37,109 +37,94 @@ export const currentUser = writable<AuthUser | null>(null);
 
 let ws: WebSocket | null = null;
 
-export async function connectWebSocket() {
-  if (
-    ws &&
-    (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
-  ) {
+function handleIncomingData(data: any) {
+  if (Array.isArray(data)) {
+    data.forEach(handleIncomingData);
     return;
   }
 
-  try {
-    const response = await fetch('/api/me', {
-      credentials: 'include',
+  if (!data) return;
+
+  if (typeof data.ChatID === 'number') {
+    messages.update((current) => [...current, data]);
+  } else if (typeof data.ID === 'number' && Array.isArray(data.Participants)) {
+    chats.update((current) => {
+      const index = current.findIndex((chat) => chat.ID === data.ID);
+
+      if (index === -1) return [...current, data];
+
+      const updated = [...current];
+      updated[index] = data;
+      return updated;
     });
-    if (!response.ok) {
-      throw new Error('User is not authenticated');
-    }
-
-    const user = (await response.json()) as AuthUser;
-
-    currentUser.set(user);
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-    ws = new WebSocket(
-      `${protocol}//${window.location.host}/api/chat?user-id=${user.ID}`,
-    );
-
-    ws.onopen = () => {
-      console.log('[Client] connected.');
-    };
-
-    ws.onmessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data) as ChatMessage | ChatMessage[];
-        if (data === null) {
-          console.warn('[Client] Received null message.');
-          return;
-        }
-        messages.update((currentMessages) => {
-          if (Array.isArray(data)) {
-            const existingMessages = new Set(
-              currentMessages.map(
-                (msg) =>
-                  `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`,
-              ),
-            );
-            const newMessages = data.filter(
-              (msg) =>
-                !existingMessages.has(
-                  `${msg.ChatID}-${msg.SendTime}-${msg.Username}-${msg.Msg}`,
-                ),
-            );
-            return [...currentMessages, ...newMessages];
-          }
-          return [...currentMessages, data];
-        });
-        console.log('[Client] Messages received:', data);
-      } catch {
-        console.error('[Client] Invalid message received.');
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('[Client] WebSocket error:', error);
-    };
-
-    ws.onclose = () => {
-      console.log('[Client] disconnected.');
-      ws = null;
-    };
-  } catch (error) {
-    console.error('[Client] Could not connect: ', error);
-    currentUser.set(null);
   }
 }
 
-export async function fetchUsers(): Promise<AuthUser[]> {
+export async function connectWebSocket() {
+  if (ws?.readyState === WebSocket.OPEN) return;
+
+  const response = await fetch('/api/me', {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not authenticate user.');
+  }
+
+  const user: AuthUser = await response.json();
+  currentUser.set(user);
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${window.location.host}/api/chat`);
+
+  ws.onmessage = (event) => {
+    try {
+      handleIncomingData(JSON.parse(event.data));
+    } catch (error) {
+      console.error('Invalid WebSocket message:', error);
+    }
+  };
+
+  await new Promise<void>((resolve, reject) => {
+    ws!.onopen = () => resolve();
+    ws!.onerror = () => reject(new Error('WebSocket connection failed.'));
+  });
+}
+
+export async function fetchUsers() {
   const response = await fetch('/api/users', {
     credentials: 'include',
   });
 
   if (!response.ok) {
-    throw new Error('Could not load users');
+    throw new Error('Could not fetch users.');
   }
 
-  const data = (await response.json()) as AuthUser[];
+  const data: AuthUser[] = await response.json();
   users.set(data);
-
-  return data;
 }
 
-export async function fetchChats(): Promise<Chat[]> {
+export async function fetchChats() {
   const response = await fetch('/api/chats', {
     credentials: 'include',
   });
 
   if (!response.ok) {
-    throw new Error('Could not load chats');
+    throw new Error('Could not fetch chats.');
   }
 
-  const data = (await response.json()) as Chat[];
+  const data: Chat[] = await response.json();
   chats.set(data);
+}
 
-  return data;
+export function disconnectWebSocket() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  users.set([]);
+  chats.set([]);
+  messages.set([]);
 }
 
 export async function createChat(data: CreateChatData): Promise<Chat> {
@@ -153,26 +138,20 @@ export async function createChat(data: CreateChatData): Promise<Chat> {
   });
 
   if (!response.ok) {
-    throw new Error('Could not create chat');
+    throw new Error('Could not create chat.');
   }
 
-  const chat = (await response.json()) as Chat;
+  const chat: Chat = await response.json();
 
-  chats.update((currentChats) => [
-    ...currentChats.filter((item) => item.ID !== chat.ID),
-    chat,
-  ]);
+  chats.update((current) => [...current, chat]);
 
   return chat;
 }
 
 export function sendMessage(chatID: number, username: string, message: string) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    console.error('[Client] WebSocket is not connected.');
-    return;
-  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-  const data: ChatMessage = {
+  const newMessage: ChatMessage = {
     infoType: 'chat',
     ChatID: chatID,
     Username: username,
@@ -180,7 +159,6 @@ export function sendMessage(chatID: number, username: string, message: string) {
     SendTime: new Date().toISOString(),
   };
 
-  ws.send(JSON.stringify(data));
-
-  messages.update((currentMessages) => [...currentMessages, data]);
+  ws.send(JSON.stringify(newMessage));
+  messages.update((current) => [...current, newMessage]);
 }
