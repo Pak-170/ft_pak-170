@@ -6,7 +6,7 @@
 <div class="game-chat-layout">
   <!-- Area del Juego-->
   <main class="game-area">
-    <img src="/GamePreview.jpg" alt="Game background" />
+    <img src="/GamePreview.gif" alt="Game background" />
   </main>
   <!-- Area del Juego-->
   <aside class="crt-panel">
