@@ -167,7 +167,8 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(20) NOT NULL,
   `alias` varchar(255) DEFAULT NULL,
-  `password_hash` VARCHAR(255) NOT NULL,
+  `avatar` varchar(64) DEFAULT NULL,
+  `password_hash` VARCHAR(255),
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

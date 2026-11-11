@@ -4,9 +4,10 @@ import "encoding/json"
 
 type User struct {
 	ID				uint	`gorm:"primaryKey"`
-	Username		string	`gorm:"username" json:"username"`
-	Alias			*string	`gorm:"alias" json:"alias"`
-	PasswordHash	string	`gorm:"password_hash" json:"-"`
+	Username		string	`json:"username"`
+	Alias			*string	`json:"alias"`
+	Avatar			*string `json:"avatar"`
+	PasswordHash	string	`json:"-"`
 }
 
 func (User) TableName() string {
