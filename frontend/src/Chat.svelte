@@ -61,6 +61,15 @@
 
   $: selectedChat = $chats.find((chat) => chat.ID === selectedChatID);
 
+  $: otherParticipant = selectedChat?.Participants?.find(
+    (user) => user.ID !== $currentUser?.ID,
+  );
+
+  $: selectedChatName =
+    selectedChat?.Type === 'individual'
+      ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
+      : selectedChat?.Name || `Chat ${selectedChatID}`;
+
   $: if (selectedChatID === null && chatIDs.length > 0) {
     selectedChatID = chatIDs[0];
   }
@@ -177,7 +186,15 @@
           class:active={selectedChatID === chat.ID}
           onclick={() => selectChat(chat.ID)}
         >
-          {chat.Name || `Chat ${chat.ID}`}
+          {#if chat.Type === 'individual'}
+            {chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
+              ?.alias ||
+              chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
+                ?.username ||
+              'Private Chat'}
+          {:else}
+            {chat.Name || `Chat ${chat.ID}`}
+          {/if}
         </button>
       {/each}
     </aside>
@@ -185,9 +202,8 @@
     <div class="chat">
       {#if selectedChatID !== null}
         <div class="header">
-          <h1>{selectedChat?.Name || `Chat ${selectedChatID}`}</h1>
+          <h1>{selectedChatName}</h1>
         </div>
-
         <div class="messages" bind:this={messagesContainer}>
           {#each selectedMessages as msg, i (`${msg.ChatID}-${msg.SendTime}-${i}`)}
             <div class="message" class:own-message={msg.Username === username}>

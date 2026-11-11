@@ -1,4 +1,3 @@
-
 <script lang="ts">
   import Chat from './Chat.svelte';
 </script>
@@ -25,23 +24,23 @@
     overflow: hidden;
   }
 
-.game-area {
-  position: absolute;
-  right: 0;
-  inset: 0 30% 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  overflow: hidden;
-}
+  .game-area {
+    position: absolute;
+    right: 0;
+    inset: 0 30% 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
 
-.game-area img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: left center;
-  display: block;
-}
+  .game-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: left center;
+    display: block;
+  }
 
   .crt-panel {
     position: absolute;
@@ -50,7 +49,7 @@
     width: 56dvh;
     height: 82dvh;
     overflow: hidden;
-	z-index: 2;
+    z-index: 2;
   }
 
   .crt-container {
