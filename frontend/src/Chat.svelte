@@ -58,16 +58,12 @@
   );
 
   const otherParticipant = $derived(
-    selectedChat?.Participants?.find(
-      (user) => user.ID !== $currentUser?.ID,
-    ),
+    selectedChat?.Participants?.find((user) => user.ID !== $currentUser?.ID),
   );
 
   const selectedChatName = $derived(
     selectedChat?.Type === 'individual'
-      ? otherParticipant?.alias ||
-          otherParticipant?.username ||
-          'Private Chat'
+      ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
       : selectedChat?.Name || `Chat ${selectedChatID}`,
   );
 
