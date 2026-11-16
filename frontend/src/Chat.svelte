@@ -18,17 +18,58 @@
     alias: string | null;
   };
 
-  let message = '';
-  let selectedChatID: number | null = null;
-  let messagesContainer: HTMLDivElement;
+  let message = $state('');
+  let selectedChatID = $state<number | null>(null);
+  let messagesContainer = $state<HTMLDivElement>();
 
-  let showNewChat = false;
-  let chatType: 'private' | 'group' = 'private';
-  let search = '';
-  let selectedUsers: ChatUser[] = [];
-  let groupName = '';
-  let creatingChat = false;
-  let errorMessage = '';
+  let showNewChat = $state(false);
+  let chatType = $state<'private' | 'group'>('private');
+  let search = $state('');
+  let selectedUsers = $state<ChatUser[]>([]);
+  let groupName = $state('');
+  let creatingChat = $state(false);
+  let errorMessage = $state('');
+
+  const username = $derived($currentUser?.username ?? '');
+
+  const chatIDs = $derived($chats.map((chat) => chat.ID));
+
+  const selectedMessages = $derived(
+    $messages
+      .filter((msg) => msg.ChatID === selectedChatID)
+      .sort(
+        (a, b) =>
+          new Date(a.SendTime).getTime() - new Date(b.SendTime).getTime(),
+      ),
+  );
+
+  const filteredUsers = $derived(
+    $users.filter(
+      (user) =>
+        user.ID !== $currentUser?.ID &&
+        `${user.username} ${user.alias ?? ''}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+    ),
+  );
+
+  const selectedChat = $derived(
+    $chats.find((chat) => chat.ID === selectedChatID),
+  );
+
+  const otherParticipant = $derived(
+    selectedChat?.Participants?.find(
+      (user) => user.ID !== $currentUser?.ID,
+    ),
+  );
+
+  const selectedChatName = $derived(
+    selectedChat?.Type === 'individual'
+      ? otherParticipant?.alias ||
+          otherParticipant?.username ||
+          'Private Chat'
+      : selectedChat?.Name || `Chat ${selectedChatID}`,
+  );
 
   onMount(async () => {
     await connectWebSocket();
@@ -41,38 +82,17 @@
     }
   });
 
-  $: username = $currentUser?.username ?? '';
+  $effect(() => {
+    if (selectedChatID === null && chatIDs.length > 0) {
+      selectedChatID = chatIDs[0];
+    }
+  });
 
-  $: chatIDs = $chats.map((chat) => chat.ID);
-
-  $: selectedMessages = $messages
-    .filter((msg) => msg.ChatID === selectedChatID)
-    .sort(
-      (a, b) => new Date(a.SendTime).getTime() - new Date(b.SendTime).getTime(),
-    );
-
-  $: filteredUsers = $users.filter(
-    (user) =>
-      user.ID !== $currentUser?.ID &&
-      `${user.username} ${user.alias ?? ''}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  );
-
-  $: selectedChat = $chats.find((chat) => chat.ID === selectedChatID);
-
-  $: otherParticipant = selectedChat?.Participants?.find(
-    (user) => user.ID !== $currentUser?.ID,
-  );
-
-  $: selectedChatName =
-    selectedChat?.Type === 'individual'
-      ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
-      : selectedChat?.Name || `Chat ${selectedChatID}`;
-
-  $: if (selectedChatID === null && chatIDs.length > 0) {
-    selectedChatID = chatIDs[0];
-  }
+  $effect(() => {
+    if (selectedMessages.length > 0) {
+      scrollDown();
+    }
+  });
 
   async function submit() {
     if (!message.trim() || selectedChatID === null || !username) {
@@ -157,10 +177,6 @@
     if (messagesContainer) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
-  }
-
-  $: if (selectedMessages.length > 0) {
-    scrollDown();
   }
 </script>
 

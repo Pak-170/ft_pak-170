@@ -86,8 +86,7 @@ export async function connectWebSocket() {
   const user: AuthUser = await response.json();
   currentUser.set(user);
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${protocol}//${window.location.host}/api/chat`);
+  ws = new WebSocket('/api/chat');
 
   ws.onmessage = (event) => {
     try {
