@@ -5,7 +5,7 @@
     loginLoading,
     loginSuccess,
   } from './stores/loginStatus.ts';
-  import { currentUser, disconnectWebSocket } from '../client';
+  import { currentUser, logout } from '../client';
   import { onMount } from 'svelte';
 
   let password = $state('');
@@ -102,17 +102,13 @@
         password = '';
         confPassword = '';
         username = '';
-        const logoutResponse = await fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include',
-        });
-        if (!logoutResponse.ok) {
+
+        try {
+          await logout();
+        } catch {
           errorMessage = 'ACCOUNT CREATED, BUT SESSION COULD NOT BE CLOSED';
           $loginHasError = true;
           showSuccessLed = false;
-        } else {
-          currentUser.set(null);
-          disconnectWebSocket();
         }
       } else {
         const meResponse = await fetch('/api/me', {

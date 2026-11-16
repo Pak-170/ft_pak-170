@@ -139,17 +139,6 @@
 </div>
 
 <style>
-  :global(body) {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    background-image: url('/Bg_PAK.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
   .monitor-container {
     position: fixed;
     top: 50%;

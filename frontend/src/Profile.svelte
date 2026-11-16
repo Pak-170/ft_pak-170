@@ -1,23 +1,16 @@
 <script lang="ts">
-  import { currentUser, disconnectWebSocket } from '../client';
+  import { currentUser, logout } from '../client';
 
   let loggingOut = $state(false);
   let errorMessage = $state('');
 
-  async function logout() {
+  async function handleLogout() {
     if (loggingOut) return;
 
     loggingOut = true;
     errorMessage = '';
     try {
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error();
-
-      currentUser.set(null);
-      disconnectWebSocket();
+      await logout();
       window.location.hash = '#/login';
     } catch {
       errorMessage = 'COULD NOT LOG OUT';
@@ -52,7 +45,7 @@
     {/if}
     <footer>
       <span>END SESSION</span>
-      <button onclick={logout} disabled={loggingOut}>
+      <button onclick={handleLogout} disabled={loggingOut}>
         {loggingOut ? 'DISCONNECTING...' : 'LOG OUT'}
       </button>
     </footer>

@@ -37,6 +37,18 @@ export const currentUser = writable<AuthUser | null>(null);
 
 let ws: WebSocket | null = null;
 
+export async function logout() {
+  const response = await fetch('/api/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Could not log out.');
+  }
+  disconnectWebSocket();
+}
+
 function handleIncomingData(data: any) {
   if (Array.isArray(data)) {
     data.forEach(handleIncomingData);
@@ -122,6 +134,7 @@ export function disconnectWebSocket() {
     ws.close();
     ws = null;
   }
+  currentUser.set(null);
   users.set([]);
   chats.set([]);
   messages.set([]);
