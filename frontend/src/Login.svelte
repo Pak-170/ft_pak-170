@@ -73,7 +73,6 @@
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(body),
       });
 
@@ -111,9 +110,7 @@
           showSuccessLed = false;
         }
       } else {
-        const meResponse = await fetch('/api/me', {
-          credentials: 'include',
-        });
+        const meResponse = await fetch('/api/me');
 
         if (!meResponse.ok) {
           errorMessage = 'SESSION CREATED, BUT USER COULD NOT BE LOADED';
