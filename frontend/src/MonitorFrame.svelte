@@ -147,7 +147,7 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    width: min(100vw, calc(100dvh * 16 / 9));
+    width: min(calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
     aspect-ratio: 16 / 9;
     display: grid;
     place-items: center;
@@ -166,7 +166,7 @@
   }
 
   .monitor-frame.vertical {
-    width: 100dvh;
+    width: calc(100dvh - 32px);
     left: 50%;
     transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
   }
@@ -242,5 +242,18 @@
     right: 3%;
     width: 6%;
     height: 8%;
+  }
+
+  :global(:root:fullscreen) .monitor-frame {
+    width: min(100vw, calc(100dvh * 16 / 9));
+  }
+
+  :global(:root:fullscreen) .monitor-frame.vertical {
+    width: 100dvh;
+    height: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
+    transform-origin: center;
   }
 </style>
