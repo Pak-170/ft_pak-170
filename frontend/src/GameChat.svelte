@@ -45,8 +45,8 @@
   .crt-panel {
     position: absolute;
     top: 5dvh;
-    right: 0;
-    width: 56dvh;
+    right: 16px;
+    width: 52dvh;
     height: 82dvh;
     overflow: hidden;
     z-index: 2;
