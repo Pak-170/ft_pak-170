@@ -33,7 +33,6 @@ func (h *Hub) getChats(c *gin.Context) {
 		log.Printf("ERROR GETTING CHATS FROM DB: %v\n", err)
 		return
 	}
-
 	c.JSON(http.StatusOK, chats)
 }
 
@@ -105,7 +104,6 @@ func (h *Hub) handleWS(c *gin.Context) {
 
 	// Upgrading connection.
 	wsconn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-
 	if err != nil {
 		log.Printf("ERROR UPGRADING HTTP CONECTION: %v\n", err)
 		return
@@ -134,6 +132,7 @@ func (h *Hub) handleWS(c *gin.Context) {
 	h.join <- client
 	go client.readFromWS(ctx)
 	go client.writeToWS(ctx)
+
 	h.sendPreviousMsgs(&chatInfo, &priorMsgs, client)
 }
 

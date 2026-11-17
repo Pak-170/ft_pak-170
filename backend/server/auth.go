@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
@@ -70,8 +69,7 @@ func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
 
 		user := models.User{Username: cred.Username, Alias: cred.Alias, PasswordHash: string(hash)}
 		if err := db.Create(&user).Error; err != nil {
-			var me *mysql.MySQLError
-			if errors.As(err, &me) && me.Number == 1062 {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
 				c.JSON(http.StatusConflict, gin.H{"error": "ese usuario ya existe"})
 				return
 			}

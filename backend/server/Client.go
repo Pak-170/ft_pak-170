@@ -5,6 +5,7 @@ import (
 	"go_pakito/dbp"
 	"go_pakito/models"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -32,37 +33,68 @@ func newClient(h *Hub, ws *websocket.Conn, info *models.User) *Client {
 	}
 }
 
+
 // ----------------------------------------------------------------------------
+
+
+func isValidMsg(msg *models.ChatView, err *error) (int, string){
+	if err != nil {
+		if websocket.IsCloseError(*err, websocket.CloseGoingAway) {
+			return websocket.CloseNormalClosure, "Bye!"
+		} else {
+			return websocket.CloseInvalidFramePayloadData, (*err).Error()
+		}
+	}
+
+	if validate.Struct(msg) != nil {
+		return websocket.ClosePolicyViolation, "Invalid JSON"
+	}
+	return 0, ""
+}
 
 func (c *Client) readFromWS(ctx context.Context) {
 
 	defer c.ws.Close()
 	defer c.cancel()
+	defer func() {c.hub.leave <- c}()
 
-	var msg models.ChatView
 	for {
+		var msg models.ChatView
 		err := c.ws.ReadJSON(&msg)
-		if err != nil {
-			log.Printf("ERROR READING JSON FROM WS: %v\n", err)
+		errCode, errMsg := isValidMsg(&msg, &err)
+		if errCode != 0 {
+			log.Printf("Client %v (%v) disconnected with Code %v (%v)\n",
+				c.info.Username, c.info.ID, errCode, errMsg)
+			c.ws.WriteControl(websocket.CloseMessage,
+				websocket.FormatCloseMessage(errCode, string(errMsg)),
+				time.Now().Add(1 * time.Second))
 			break
 		}
-		c.hub.broadcastChan <- &msg
-		dbp.InsertMsg(ctx, c.hub.DB, &msg)
+		select {
+		case <-ctx.Done():
+			log.Println("CTX DONE EN READPUMP")
+			return
+		case c.hub.broadcastChan <- &msg:
+			err = dbp.InsertMsg(ctx, c.hub.DB, &msg)
+			if err != nil {
+				log.Printf("ERROR INSERTING INTO DB: %v\n", err)
+				return
+			}
+		}
 	}
 }
 
 func (c *Client) writeToWS(ctx context.Context) {
 
-//	defer c.ws.Close()
-	defer func() {c.hub.leave <- c}()
+	defer c.ws.Close()
+	defer c.cancel()
 
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("CTX DONE EN WRITEPUMP")
 			return
-		case msg, ok := <-c.sendMsg: // hemos recibimos un msg en el canal send
-			log.Printf("(%v) 1 ->> OK: %v\n", c.info.ID, ok)
+		case msg, ok := <-c.sendMsg:
 			if !ok {
 				log.Println("User connection closed")
 				return
@@ -73,7 +105,6 @@ func (c *Client) writeToWS(ctx context.Context) {
 				return
 			}
 		case chatInfo, ok := <-c.sendChatInfo:
-			log.Printf("(%v) 2 ->> OK: %v\n", c.info.ID, ok)
 			if !ok {
 				log.Println("User connection closed")
 				return
