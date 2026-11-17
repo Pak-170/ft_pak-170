@@ -40,7 +40,6 @@ let ws: WebSocket | null = null;
 export async function logout() {
   const response = await fetch('/api/logout', {
     method: 'POST',
-    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -75,9 +74,7 @@ function handleIncomingData(data: any) {
 export async function connectWebSocket() {
   if (ws?.readyState === WebSocket.OPEN) return;
 
-  const response = await fetch('/api/me', {
-    credentials: 'include',
-  });
+  const response = await fetch('/api/me');
 
   if (!response.ok) {
     throw new Error('Could not authenticate user.');
@@ -103,9 +100,7 @@ export async function connectWebSocket() {
 }
 
 export async function fetchUsers() {
-  const response = await fetch('/api/users', {
-    credentials: 'include',
-  });
+  const response = await fetch('/api/users');
 
   if (!response.ok) {
     throw new Error('Could not fetch users.');
@@ -116,9 +111,7 @@ export async function fetchUsers() {
 }
 
 export async function fetchChats() {
-  const response = await fetch('/api/chats', {
-    credentials: 'include',
-  });
+  const response = await fetch('/api/chats');
 
   if (!response.ok) {
     throw new Error('Could not fetch chats.');
@@ -142,7 +135,6 @@ export function disconnectWebSocket() {
 export async function createChat(data: CreateChatData): Promise<Chat> {
   const response = await fetch('/api/chats', {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },

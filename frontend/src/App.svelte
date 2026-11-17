@@ -67,9 +67,7 @@
     window.addEventListener('hashchange', updateRoute);
     async function checkSession() {
       try {
-        const response = await fetch('/api/me', {
-          credentials: 'include',
-        });
+        const response = await fetch('/api/me');
         if (response.ok) {
           const user = await response.json();
           currentUser.set(user);
