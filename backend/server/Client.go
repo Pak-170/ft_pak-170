@@ -37,15 +37,14 @@ func newClient(h *Hub, ws *websocket.Conn, info *models.User) *Client {
 // ----------------------------------------------------------------------------
 
 
-func isValidMsg(msg *models.ChatView, err *error) (int, string){
+func isValidMsg(msg *models.ChatView, err error) (int, string){
 	if err != nil {
-		if websocket.IsCloseError(*err, websocket.CloseGoingAway) {
+		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
 			return websocket.CloseNormalClosure, "Bye!"
 		} else {
-			return websocket.CloseInvalidFramePayloadData, (*err).Error()
+			return websocket.CloseInvalidFramePayloadData, err.Error()
 		}
 	}
-
 	if validate.Struct(msg) != nil {
 		return websocket.ClosePolicyViolation, "Invalid JSON"
 	}
@@ -61,7 +60,7 @@ func (c *Client) readFromWS(ctx context.Context) {
 	for {
 		var msg models.ChatView
 		err := c.ws.ReadJSON(&msg)
-		errCode, errMsg := isValidMsg(&msg, &err)
+		errCode, errMsg := isValidMsg(&msg, err)
 		if errCode != 0 {
 			log.Printf("Client %v (%v) disconnected with Code %v (%v)\n",
 				c.info.Username, c.info.ID, errCode, errMsg)
@@ -70,16 +69,16 @@ func (c *Client) readFromWS(ctx context.Context) {
 				time.Now().Add(1 * time.Second))
 			break
 		}
+		err = dbp.InsertMsg(ctx, c.hub.DB, &msg)
+		if err != nil {
+			log.Printf("ERROR INSERTING INTO DB: %v\n", err)
+			break
+		}
 		select {
 		case <-ctx.Done():
 			log.Println("CTX DONE EN READPUMP")
 			return
 		case c.hub.broadcastChan <- &msg:
-			err = dbp.InsertMsg(ctx, c.hub.DB, &msg)
-			if err != nil {
-				log.Printf("ERROR INSERTING INTO DB: %v\n", err)
-				return
-			}
 		}
 	}
 }
