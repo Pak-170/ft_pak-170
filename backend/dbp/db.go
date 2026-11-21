@@ -69,19 +69,6 @@ func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]mode
 	return chats, chatsMsgs, err
 }
 
-// func	SelectAnyWhere[T any](ctx context.Context, db *gorm.DB, where string) ([]T, error) {
-// 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
-// 	defer cancel()
-
-// 	tableRegisters, err := gorm.G[T](db).Where(where).Find(ctxWithTimeout)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return tableRegisters, err
-// }
-
-
 func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
@@ -95,8 +82,6 @@ func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
 }
 
 func	SelectChatMsgs(ctx context.Context, db *gorm.DB, chatID uint) ([]models.ChatView, error) {
-
-
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
 	var err error
@@ -109,23 +94,14 @@ func	SelectChatMsgs(ctx context.Context, db *gorm.DB, chatID uint) ([]models.Cha
 // INSERT ---------------------------------------------------------------------
 
 func	InsertMsg(ctx context.Context, db *gorm.DB, msgInChat *models.ChatView) error {
-	var	msgInDB models.Message = models.Message{
-		ChatID: msgInChat.ChatID,
-		Msg: msgInChat.Msg,
-		Time: msgInChat.SendTime,
-	}
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
-	var	err error
 
-	err = gorm.G[models.User](db).Select("id").Where("username = ?", msgInChat.Username).Scan(ctxWithTimeout, &msgInDB.SenderID)
-	if err != nil {
-		log.Printf("ERROR CREATING THE MSG MODEL: %v\n", err)
-	}
-	err = gorm.G[models.Message](db).Create(ctx, &msgInDB)
-	if err != nil {
-		log.Printf("ERROR INSERTING INTO DB: %v\n", err)
-	}
+	err := gorm.G[models.Message](db).Exec(ctxWithTimeout, 
+		`INSERT INTO messages(sender_id, chat_id, msg, time)
+		VALUES((SELECT id FROM users WHERE username = ?), ?, ?, ?);`,
+		msgInChat.Username, msgInChat.ChatID, msgInChat.Msg, msgInChat.SendTime)
+
 	return err
 }
 

@@ -1,18 +1,25 @@
 package server
 
 import (
-	"gorm.io/gorm"
 	"go_pakito/models"
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
 	"context"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
+
+
+var validate *validator.Validate
 
 func InitServer(ctx context.Context, db *gorm.DB) {
 
 	var hub Hub = newHub(db)
+	validate = validator.New(validator.WithRequiredStructEnabled())
 
 	go hub.run(ctx)
 

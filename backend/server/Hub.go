@@ -46,6 +46,11 @@ func (h *Hub) broadcast(msg *models.ChatView) {
 
 	newMsgNotification := newMsgNotification{msg}
 
+	if h.chats[msg.ChatID] == nil {
+		log.Println("NOT_FOUND: Ignoring message...") // ahora con el validator ya no se pasa aquí
+		return
+	}
+
 	for _, user := range h.chats[msg.ChatID].Participants {
 		client := h.clients[user.ID]
 		if user.Username == msg.Username {
@@ -132,13 +137,10 @@ func (h *Hub) run(ctx context.Context) {
 			log.Println("conexion closed")
 			return
 		case user := <-h.join:
-			log.Printf("hub join channel: %v\n", user)
 			h.clients[user.info.ID].online = true
 		case user := <-h.leave:
-			log.Printf("hub leave channel: %v\n", user)
 			h.clients[user.info.ID].online = false
 		case msg := <-h.broadcastChan:
-			log.Printf("hub broadcast channel: %v\n", msg)
 			h.broadcast(msg)
 		}
 	}
