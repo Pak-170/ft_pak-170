@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"go_pakito/dbp"
+	"go_pakito/game"
 	"go_pakito/models"
 	"log"
 	"net/http"
@@ -36,7 +38,7 @@ func (h *Hub) getChats(c *gin.Context) {
 	c.JSON(http.StatusOK, chats)
 }
 
-func	(h *Hub)postChats(c *gin.Context) {
+func (h *Hub) postChats(c *gin.Context) {
 
 	var chat CreateChatData
 
@@ -92,7 +94,7 @@ func (h *Hub) sendPreviousMsgs(chatsInfo *[]models.Chat, priorMsgs *[]models.Cha
 func cancelPriorContext(client *Client) context.Context {
 	ctx, cancel := context.WithCancel(context.Background())
 	if client.ws != nil {
-		log.Printf("SE HA RECARGADO LA PÁGINAAAAAAAAAAAA\n\n");
+		log.Printf("SE HA RECARGADO LA PÁGINAAAAAAAAAAAA\n\n")
 		client.ws.Close()
 		client.cancel()
 	}
@@ -136,3 +138,35 @@ func (h *Hub) handleWS(c *gin.Context) {
 	h.sendPreviousMsgs(&chatInfo, &priorMsgs, client)
 }
 
+func (h *Hub) handleGameWs(c *gin.Context) {
+	// Upgrading connection.
+	wsconn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+
+	if err != nil {
+		log.Printf("ERROR UPGRADING HTTP CONECTION: %v\n", err)
+		return
+	}
+
+	my_chan := make(chan game.StateMsg)
+	h.CurrGameClient = &my_chan
+
+	go func() {
+		for {
+			select {
+			case game_state := <-my_chan:
+				wsconn.WriteJSON(game_state)
+			}
+		}
+	}()
+	go func() {
+		for {
+			var msg game.MousePosMsg
+			err := wsconn.ReadJSON(&msg)
+			if err != nil {
+				fmt.Errorf("Invalid mouse coords passed: ", err)
+				break
+			}
+			h.RunningGame.MousePos <- msg
+		}
+	}()
+}

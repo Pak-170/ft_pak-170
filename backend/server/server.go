@@ -50,6 +50,7 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 		protected.GET("/chats", hub.getChats)
 		protected.GET("/users", hub.getUsers)
 		protected.GET("/chat", hub.handleWS)
+		protected.GET("/game", hub.handleGameWs)
 	}
 
 	port := os.Getenv("PORT")

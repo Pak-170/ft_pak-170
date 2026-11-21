@@ -3,44 +3,46 @@ package server
 import (
 	"context"
 	"go_pakito/dbp"
+	"go_pakito/game"
 	"go_pakito/models"
 	"log"
+
 	"gorm.io/gorm"
 )
 
-
 type CreateChatData struct {
-	InfoType	string	`json:"infoType"`
-	Name		string	`json:"name"`
-	ChatType	string	`json:"type"`
-	UserIDs		[]uint	`json:"userIDs"`
+	InfoType string `json:"infoType"`
+	Name     string `json:"name"`
+	ChatType string `json:"type"`
+	UserIDs  []uint `json:"userIDs"`
 }
 
 type Hub struct { // Es el único que puede gestionar y trabajar realmente con los elementos compartidos entre clientes
-	DB				*gorm.DB
-	chats			map[uint]*models.Chat
-	clients			map[uint]*Client
+	DB             *gorm.DB
+	chats          map[uint]*models.Chat
+	clients        map[uint]*Client
+	RunningGame    game.RunningGame
+	CurrGameClient *chan game.StateMsg
 
-	join			chan *Client
-	leave			chan *Client
-	newChat			chan *models.Chat
-	broadcastChan	chan *models.ChatView
+	join          chan *Client
+	leave         chan *Client
+	newChat       chan *models.Chat
+	broadcastChan chan *models.ChatView
 }
 
 func newHub(db *gorm.DB) Hub {
 	return Hub{
-		DB:				db,
-		chats:			make(map[uint]*models.Chat),
-		clients:		make(map[uint]*Client),
-		join:			make(chan *Client),
-		leave:			make(chan *Client),
-		newChat:		make(chan *models.Chat),
-		broadcastChan:	make(chan *models.ChatView),
+		DB:            db,
+		chats:         make(map[uint]*models.Chat),
+		clients:       make(map[uint]*Client),
+		join:          make(chan *Client),
+		leave:         make(chan *Client),
+		newChat:       make(chan *models.Chat),
+		broadcastChan: make(chan *models.ChatView),
 	}
 }
 
 // ----------------------------------------------------------------------------
-
 
 func (h *Hub) broadcast(msg *models.ChatView) {
 
@@ -60,8 +62,7 @@ func (h *Hub) broadcast(msg *models.ChatView) {
 	}
 }
 
-
-func (hub *Hub)initChats(ctx context.Context) error {
+func (hub *Hub) initChats(ctx context.Context) error {
 
 	var chats map[uint]*models.Chat = make(map[uint]*models.Chat, 0)
 
@@ -82,7 +83,7 @@ func (hub *Hub)initChats(ctx context.Context) error {
 	return err
 }
 
-func (hub *Hub)initClients(ctx context.Context) error {
+func (hub *Hub) initClients(ctx context.Context) error {
 	var clients map[uint]*Client = make(map[uint]*Client, 0)
 
 	clientsDB, err := dbp.SelectAny[models.User](ctx, hub.DB)
@@ -97,8 +98,7 @@ func (hub *Hub)initClients(ctx context.Context) error {
 	return err
 }
 
-
-func	(h *Hub) insertUsersInChat(ctx context.Context, chatID uint, users []uint) error {
+func (h *Hub) insertUsersInChat(ctx context.Context, chatID uint, users []uint) error {
 
 	var err error
 
@@ -121,6 +121,23 @@ func	(h *Hub) insertUsersInChat(ctx context.Context, chatID uint, users []uint) 
 // ----------------------------------------------------------------------------
 
 func (h *Hub) run(ctx context.Context) {
+
+	state := game.Init()
+	state.InitScene()
+	h.RunningGame = game.RunGame(&state)
+
+	// TODO: Delete this, and replace with a proper writer per session
+	go func() {
+		for {
+			state := <-h.RunningGame.RecvState
+			if h.CurrGameClient != nil {
+				select {
+				case *h.CurrGameClient <- state:
+				default:
+				}
+			}
+		}
+	}()
 
 	if err := h.initChats(ctx); err != nil {
 		log.Printf("ERROR INITIALIZING CHATS: %v\n", err)
