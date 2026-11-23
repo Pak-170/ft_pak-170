@@ -116,7 +116,7 @@ function handleIncomingMessage(message: ChatMessage) {
     return;
   }
 
-  if (get(selectedChatID) === message.ChatID) {
+  if (get(chatPageActive) && get(selectedChatID) === message.ChatID) {
     return;
   }
 
@@ -133,8 +133,7 @@ function handleIncomingMessage(message: ChatMessage) {
   }
 
   const chatName = getChatName(message.ChatID);
-  const notificationMessage =
-    `You have ${newCount} new messages from ${chatName}`;
+  const notificationMessage = `You have ${newCount} new messages from ${chatName}`;
 
   notifications.update((current) => {
     const existing = current.find(

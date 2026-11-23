@@ -33,10 +33,7 @@ export function addUnreadMessage(chatID: number) {
 export function addErrorNotification(message: string) {
   const id = ++notificationID;
 
-  errorNotifications.update((current) => [
-    ...current,
-    { id, message },
-  ]);
+  errorNotifications.update((current) => [...current, { id, message }]);
 }
 
 export function removeErrorNotification(id: number) {

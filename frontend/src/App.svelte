@@ -88,7 +88,7 @@
   function openNotification(chatID: number) {
     selectedChatID.set(chatID);
     markChatAsRead(chatID);
-    window.location.hash = '#/chat';
+    window.location.hash = '#/';
   }
 
   onMount(() => {

@@ -60,16 +60,12 @@
   );
 
   const otherParticipant = $derived(
-    selectedChat?.Participants?.find(
-      (user) => user.ID !== $currentUser?.ID,
-    ),
+    selectedChat?.Participants?.find((user) => user.ID !== $currentUser?.ID),
   );
 
   const selectedChatName = $derived(
     selectedChat?.Type === 'individual'
-      ? otherParticipant?.alias ||
-          otherParticipant?.username ||
-          'Private Chat'
+      ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
       : selectedChat?.Name || `Chat ${$selectedChatID}`,
   );
 
@@ -103,11 +99,7 @@
       return;
     }
 
-    const sent = sendMessage(
-      $selectedChatID,
-      username,
-      message.trim(),
-    );
+    const sent = sendMessage($selectedChatID, username, message.trim());
 
     if (sent) {
       message = '';
@@ -213,8 +205,7 @@
         >
           {#if chat.Type === 'individual'}
             {chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
-                ?.username ||
-              'Private Chat'}
+              ?.username || 'Private Chat'}
           {:else}
             {chat.Name || `Chat ${chat.ID}`}
           {/if}
@@ -234,10 +225,7 @@
         </div>
         <div class="messages" bind:this={messagesContainer}>
           {#each selectedMessages as msg, i (`${msg.ChatID}-${msg.SendTime}-${i}`)}
-            <div
-              class="message"
-              class:own-message={msg.Username === username}
-            >
+            <div class="message" class:own-message={msg.Username === username}>
               <strong>{msg.Username}</strong>
               <div>{msg.Msg}</div>
               <small>
@@ -428,8 +416,8 @@
     padding: 2cqh 2cqw;
     text-align: left;
     font-size: clamp(10px, 2.5cqw, 18px);
-	background: var(--surface-light);
-	color: var(--green-bright);
+    background: var(--surface-light);
+    color: var(--green-bright);
   }
 
   .unread-count {
