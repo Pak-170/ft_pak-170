@@ -196,11 +196,12 @@
 
 <style>
   .monitor-container {
+    --unit: min(calc(100dvh - 32px), calc((100vw - 32px) / 1.5625));
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: min(100vw, calc(100dvh * 16 / 9));
+    width: min(calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
     aspect-ratio: 16 / 9;
     overflow: visible;
   }
@@ -220,19 +221,14 @@
   }
 
   .monitor-container.game-mode {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100dvh;
+    width: calc(var(--unit) * 1.5625);
+    height: var(--unit);
     aspect-ratio: auto;
-    transform: none;
   }
 
   .web-content.game-mode {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
   }

@@ -144,19 +144,19 @@
 
 <style>
   .monitor-frame {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
-    width: min(calc(100vw - 32px), calc((100dvh - 32px) * 16 / 9));
-    aspect-ratio: 16 / 9;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
     display: grid;
     place-items: center;
-    transform: translate(-50%, -50%) rotate(0deg);
+    transform: translate(-50%, -50%);
     transform-origin: center;
     z-index: 10000;
     pointer-events: none;
     overflow: visible;
-    transition: none;
   }
 
   .monitor-frame.transitioning {
@@ -166,9 +166,14 @@
   }
 
   .monitor-frame.vertical {
-    width: calc(100dvh - 32px);
-    left: 50%;
-    transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
+    width: var(--unit);
+    height: auto;
+    aspect-ratio: 16 / 9;
+
+    left: 82%;
+    top: 50%;
+
+    transform: translate(-50%, -50%) rotate(90deg);
   }
 
   .layer {
@@ -242,18 +247,5 @@
     right: 3%;
     width: 6%;
     height: 8%;
-  }
-
-  :global(:root:fullscreen) .monitor-frame {
-    width: min(100vw, calc(100dvh * 16 / 9));
-  }
-
-  :global(:root:fullscreen) .monitor-frame.vertical {
-    width: 100dvh;
-    height: auto;
-    top: 50%;
-    left: 50%;
-    transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
-    transform-origin: center;
   }
 </style>

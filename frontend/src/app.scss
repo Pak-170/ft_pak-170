@@ -54,6 +54,17 @@ body {
   color: var(--black);
 }
 
+.game-area :global(div) {
+  width: 100%;
+  height: 100%;
+}
+
+.game-area :global(canvas) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Shared chat controls */
 .chat button,
 .modal button,
