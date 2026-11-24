@@ -1,11 +1,12 @@
 <script lang="ts">
   import Chat from './Chat.svelte';
+  import Game from './Game.svelte';
 </script>
 
 <div class="game-chat-layout">
   <!-- Area del Juego-->
   <main class="game-area">
-    <img src="/GamePreview.gif" alt="Game background" />
+    <Game />
   </main>
   <!-- Area del Juego-->
   <aside class="crt-panel">
@@ -32,14 +33,6 @@
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
-  }
-
-  .game-area img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: left center;
-    display: block;
   }
 
   .crt-panel {
