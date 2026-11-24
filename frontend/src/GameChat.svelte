@@ -20,13 +20,13 @@
 
 <style>
   .game-chat-layout {
-    position: relative;
+    position: absolute;
+    inset: 0;
     display: grid;
-    grid-template-columns: 64% 30.24%;
-    column-gap: 3.06%;
+    grid-template-columns: minmax(0, 1fr) 30.24%;
+    gap: 0;
     width: 100%;
     height: 100%;
-    align-items: start;
     overflow: hidden;
   }
 
@@ -56,5 +56,9 @@
   .chat-screen {
     position: absolute;
     inset: 0;
+  }
+
+  :global(:root:not(:fullscreen)) .game-chat-layout {
+    grid-template-columns: minmax(0, 1fr) 36%;
   }
 </style>

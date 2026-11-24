@@ -233,6 +233,21 @@
     height: 100%;
   }
 
+  :global(:root:fullscreen) .monitor-container {
+    --unit: min(100dvh, calc(100vw / 1.5625));
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
+    transform: none;
+    aspect-ratio: auto;
+  }
+
+  :global(:root:fullscreen) .monitor-container.game-mode {
+    width: 100vw;
+    height: 100dvh;
+  }
+
   .notifications {
     position: fixed;
     top: 20px;

@@ -101,7 +101,12 @@
   }
 </script>
 
-<div class="monitor-frame" class:vertical class:transitioning>
+<div
+  class="monitor-frame"
+  class:vertical
+  class:transitioning
+  class:fullscreen={isFullscreen}
+>
   <img class="layer border-layer" src="/border.png" alt="" />
 
   <div class="keys-layer">
@@ -162,17 +167,22 @@
   .monitor-frame.transitioning {
     transition:
       width 3s cubic-bezier(0.65, 0, 0.35, 1),
-      transform 3s cubic-bezier(0.65, 0, 0.35, 1);
+      transform 3s cubic-bezier(0.65, 0, 0.35, 1),
+      left 3s cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   .monitor-frame.vertical {
     width: var(--unit);
     height: auto;
     aspect-ratio: 16 / 9;
-
     left: 82%;
     top: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
 
+  .monitor-frame.vertical.fullscreen {
+    left: calc(100% - (var(--unit) * 0.28125));
+    top: 50%;
     transform: translate(-50%, -50%) rotate(90deg);
   }
 
