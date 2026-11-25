@@ -2,9 +2,12 @@ package server
 
 import (
 	"context"
+	"go_pakito/Notification"
+	"go_pakito/Session"
 	"go_pakito/dbp"
 	"go_pakito/models"
 	"log"
+
 	"gorm.io/gorm"
 )
 
@@ -19,10 +22,11 @@ type CreateChatData struct {
 type Hub struct { // Es el único que puede gestionar y trabajar realmente con los elementos compartidos entre clientes
 	DB				*gorm.DB
 	chats			map[uint]*models.Chat
-	clients			map[uint]*Client
+	//clients			map[uint]*Client
+	sessions		map[string]session.Session
 
-	join			chan *Client
-	leave			chan *Client
+	join			chan *session.Session
+	leave			chan *session.Session
 	newChat			chan *models.Chat
 	broadcastChan	chan *models.ChatView
 }
@@ -31,9 +35,11 @@ func newHub(db *gorm.DB) Hub {
 	return Hub{
 		DB:				db,
 		chats:			make(map[uint]*models.Chat),
-		clients:		make(map[uint]*Client),
-		join:			make(chan *Client),
-		leave:			make(chan *Client),
+		//clients:		make(map[uint]*Client),
+		sessions:		make(map[string]session.Session),
+
+		join:			make(chan *session.Session),
+		leave:			make(chan *session.Session),
 		newChat:		make(chan *models.Chat),
 		broadcastChan:	make(chan *models.ChatView),
 	}
@@ -41,25 +47,46 @@ func newHub(db *gorm.DB) Hub {
 
 // ----------------------------------------------------------------------------
 
+// -- Session interface implementation:
 
-func (h *Hub) broadcast(msg *models.ChatView) {
-
-	newMsgNotification := newMsgNotification{msg}
-
-	if h.chats[msg.ChatID] == nil {
-		log.Println("NOT_FOUND: Ignoring message...") // ahora con el validator ya no se pasa aquí
-		return
-	}
-
-	for _, user := range h.chats[msg.ChatID].Participants {
-		client := h.clients[user.ID]
-		if user.Username == msg.Username {
-			continue
-		}
-		newMsgNotification.notify(client)
+func (h *Hub) Broadcast(ctx context.Context, msg *models.ChatView) error{
+	select {
+	case <-ctx.Done():
+		log.Println("CTX DONE EN READPUMP - BROADCAST")
+		return ctx.Err()
+	case h.broadcastChan <- msg:
+		return nil
 	}
 }
 
+func (h *Hub) Join(s *session.Session) {
+	h.join <- s // qUIZÁS esto en un select
+}
+
+func (h *Hub) Leave(s *session.Session) {
+	h.leave <- s
+}
+
+// ----------------------------------------------------------------------------
+
+func (h *Hub) broadcast(ctx context.Context, msg *models.ChatView) {
+
+	newMsg := Notification.NewMsg{Msg: msg}
+
+	sessions, err := dbp.SelectSessionsFromChatID(ctx, h.DB, msg.ChatID)
+	if err != nil {
+		log.Println("DB error while trying to broadcast a msg...")
+	}
+
+	for _, sessionModel := range sessions {
+
+		sessionSession, exists := h.sessions[sessionModel.ID] // Qué clase de nombres son estos Yolanda por favor
+		if exists == false || sessionSession.GetHashedToken() == msg.SenderHashToken {
+			continue
+		}
+		newMsg.Notify(&sessionSession)
+	}
+}
 
 func (hub *Hub)initChats(ctx context.Context) error {
 
@@ -79,21 +106,6 @@ func (hub *Hub)initChats(ctx context.Context) error {
 		chats[chatDB.ID].Participants = participants
 	}
 	hub.chats = chats
-	return err
-}
-
-func (hub *Hub)initClients(ctx context.Context) error {
-	var clients map[uint]*Client = make(map[uint]*Client, 0)
-
-	clientsDB, err := dbp.SelectAny[models.User](ctx, hub.DB)
-
-	if err != nil {
-		return err
-	}
-	for _, clientDB := range clientsDB {
-		clients[clientDB.ID] = newClient(hub, nil, &clientDB)
-	}
-	hub.clients = clients
 	return err
 }
 
@@ -126,22 +138,22 @@ func (h *Hub) run(ctx context.Context) {
 		log.Printf("ERROR INITIALIZING CHATS: %v\n", err)
 		return
 	}
-	if err := h.initClients(ctx); err != nil {
-		log.Printf("ERROR INITIALIZING CLIENTS: %v\n", err)
-		return
-	}
+	// if err := h.initClients(ctx); err != nil {
+	// 	log.Printf("ERROR INITIALIZING CLIENTS: %v\n", err)
+	// 	return
+	// }
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("conexion closed")
+			log.Println("conection closed --------------- ")
 			return
-		case user := <-h.join:
-			h.clients[user.info.ID].online = true
-		case user := <-h.leave:
-			h.clients[user.info.ID].online = false
+		case s := <-h.join:
+			h.sessions[s.GetHashedToken()] = *s
+		case s := <-h.leave:
+			delete(h.sessions, s.GetHashedToken())
 		case msg := <-h.broadcastChan:
-			h.broadcast(msg)
+			h.broadcast(ctx, msg)
 		}
 	}
 }

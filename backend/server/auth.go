@@ -13,6 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"go_pakito/models"
+	"log"
 )
 
 const (
@@ -24,6 +25,14 @@ type credentials struct {
 	Username string  `json:"username" form:"username"`
 	Password string  `json:"password" form:"password"`
 	Alias    *string `json:"alias" form:"alias"`
+}
+
+func getHashToken(c *gin.Context) (string, error){
+	sessionToken, err := c.Cookie("session")
+	if err != nil {
+		return "", err
+	}
+	return hashToken(sessionToken), err
 }
 
 func hashToken(t string) string {
@@ -53,6 +62,7 @@ func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		if l := len(cred.Username); l < 3 || l > 20 {
+			log.Printf("%v\n", c.Request)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "el usuario debe tener entre 3 y 20 caracteres"})
 			return
 		}
@@ -76,7 +86,7 @@ func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno"})
 			return
 		}
-		h.clients[user.ID] = newClient(h, nil, &user)
+	//	h.clients[user.ID] = newClient(h, nil, &user)
 		if err := startSession(c, db, user.ID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "usuario creado, pero falló el inicio de sesión"})
 			return

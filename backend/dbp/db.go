@@ -9,7 +9,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+//	"gorm.io/gorm/logger"
 
 	"database/sql"
 	"go_pakito/models"
@@ -91,6 +91,32 @@ func	SelectChatMsgs(ctx context.Context, db *gorm.DB, chatID uint) ([]models.Cha
 	return chats, err
 }
 
+func	SelectUserFromToken(ctx context.Context, db *gorm.DB, token string) (models.User, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	subQuery := db.Model(&models.Session{}).Select("user_id").Where("id = ?", token) //userID????
+	user, err := gorm.G[models.User](db).Where("id = (?)", subQuery).First(ctxWithTimeout)
+
+	return user, err
+}
+
+// SELECT sessions.* FROM sessions JOIN chat_user ON user = user_id;
+func	SelectSessionsFromChatID(ctx context.Context, db *gorm.DB, chatID uint) ([]models.Session, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	var sessions []models.Session
+	err := db.WithContext(ctxWithTimeout).
+		Table("sessions").
+		Select("sessions.*").
+		Joins("JOIN chat_user ON chat_user.user = sessions.user_id").
+		Where("chat_user.chat = ?", chatID).
+		Find(&sessions).Error
+	return sessions, err
+}
+
+
 // INSERT ---------------------------------------------------------------------
 
 func	InsertMsg(ctx context.Context, db *gorm.DB, msgInChat *models.ChatView) error {
@@ -147,7 +173,7 @@ func OpenDatabaseConnection() (*gorm.DB, *sql.DB) {
 	db, err := gorm.Open(mysql.Open(dsn),
 		&gorm.Config{
 			TranslateError: true,
-			Logger: logger.Default.LogMode(logger.Info),
+			//Logger: logger.Default.LogMode(logger.Info),
 		})
 	if err != nil {
 		log.Fatalf("open db error: %v", err)
@@ -161,8 +187,6 @@ func OpenDatabaseConnection() (*gorm.DB, *sql.DB) {
 	err = sqlDB.Ping()
 	if err != nil {
 		log.Fatalf("DB connection failed: %v", err)
-	} else {
-		fmt.Println("DB OK")
 	}
 
 	return db, sqlDB

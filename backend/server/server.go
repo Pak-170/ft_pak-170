@@ -10,16 +10,13 @@ import (
 	"context"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 
-var validate *validator.Validate
 
-func InitServer(ctx context.Context, db *gorm.DB) {
 
+func NewRouter(ctx context.Context, db *gorm.DB) *gin.Engine{
 	var hub Hub = newHub(db)
-	validate = validator.New(validator.WithRequiredStructEnabled())
 
 	go hub.run(ctx)
 
@@ -41,9 +38,9 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 				c.JSON(http.StatusNotFound, gin.H{"error": "usuario no encontrado"})
 				return
 			}
-			if hub.clients[userID] != nil {
-				hub.clients[userID].online = true
-			}
+			// if hub.clients[userID] != nil {
+			// 	hub.clients[userID].online = true
+			// }
 			c.JSON(http.StatusOK, u)
 		})
 		protected.POST("/chats", hub.postChats)
@@ -51,7 +48,11 @@ func InitServer(ctx context.Context, db *gorm.DB) {
 		protected.GET("/users", hub.getUsers)
 		protected.GET("/chat", hub.handleWS)
 	}
+	return r
+}
 
+func InitServer(ctx context.Context, db *gorm.DB) {
+	r := NewRouter(ctx, db)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080" // para ejecutar fuera de Docker
