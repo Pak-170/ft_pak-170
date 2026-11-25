@@ -2,10 +2,10 @@ package server
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
+	"encoding/binary"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,26 +26,41 @@ type credentials struct {
 	Alias    *string `json:"alias" form:"alias"`
 }
 
-func hashToken(t string) string {
-	sum := sha256.Sum256([]byte(t))
-	return hex.EncodeToString(sum[:])
+// newToken returns 64 random bits from the cryptographic generator of the system.
+// Never use math/rand for this: is predictable.
+func newToken() (uint64, error) {
+	var b [8]byte
+	for {
+		if _, err := rand.Read(b[:]); err != nil {
+			return 0, err
+		}
+		if t := binary.BigEndian.Uint64(b[:]); t != 0 { // 0 se reserva como "sin token"
+			return t, nil
+		}
+	}
 }
 
-func newSession(db *gorm.DB, userID uint) (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+// parseToken conveerts the value of the cookie into uint64.
+// If it isn't valid, it doesn't make a request to the DB.
+func parseToken(s string) (uint64, bool) {
+	t, err := strconv.ParseUint(s, 10, 64)
+	return t, err == nil && t != 0
+}
+
+func newSession(db *gorm.DB, userID uint) (uint64, error) {
+	token, err := newToken()
+	if err != nil {
+		return 0, err
 	}
-	token := hex.EncodeToString(b)
 	s := models.Session{
-		ID:        hashToken(token),
+		ID:        token,
 		UserID:    userID,
 		ExpiresAt: time.Now().Add(sessionTTL),
 	}
 	return token, db.Create(&s).Error
 }
 
-func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
+func (h *Hub) Register(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var cred credentials
 		if err := c.ShouldBind(&cred); err != nil {
@@ -111,7 +126,9 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 func Logout(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if cookie, err := c.Cookie(cookieName); err == nil {
-			db.Delete(&models.Session{}, "id = ?", hashToken(cookie))
+			if id, ok := parseToken(cookie); ok {
+				db.Delete(&models.Session{}, "id = ?", id)
+			}
 		}
 		http.SetCookie(c.Writer, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
 		c.Status(http.StatusNoContent)
@@ -124,12 +141,12 @@ func startSession(c *gin.Context, db *gorm.DB, userID uint) error {
 		return err
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:	cookieName,
-		Value:	token,
-		Path:	"/",
-		MaxAge:	int(sessionTTL.Seconds()),
-		HttpOnly:	true,
-		SameSite:	http.SameSiteLaxMode,
+		Name:     cookieName,
+		Value:    strconv.FormatUint(token, 10),
+		Path:     "/",
+		MaxAge:   int(sessionTTL.Seconds()),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	})
 	return nil
 }
@@ -142,15 +159,20 @@ func Auth(db *gorm.DB) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "no has iniciado sesión"})
 			return
 		}
+		id, ok := parseToken(cookie)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "sesión inválida o caducada"})
+			return
+		}
 
 		var s models.Session
-		err = db.Where("id = ? AND expires_at > ?", hashToken(cookie), time.Now()).First(&s).Error
-		if err != nil {
+		if err := db.Where("id = ? AND expires_at > ?", id, time.Now()).First(&s).Error; err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "sesión inválida o caducada"})
 			return
 		}
 
 		c.Set("userID", s.UserID)
+		c.Set("sessionID", s.ID) // uint64
 		c.Next()
 	}
 }
@@ -158,4 +180,9 @@ func Auth(db *gorm.DB) gin.HandlerFunc {
 // Inside a protected handler: uid := UserID(c)
 func UserID(c *gin.Context) uint {
 	return c.GetUint("userID")
+}
+
+// Inside a protected handler: sid := SessionID(c)
+func SessionID(c *gin.Context) uint64 {
+	return c.GetUint64("sessionID")
 }

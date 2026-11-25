@@ -3,11 +3,11 @@ package models
 import "time"
 
 type Session struct {
-	ID			string `gorm:"primaryKey"`
-	UserID		uint
-	ExpiresAt	time.Time
+	ID        uint64 `gorm:"primaryKey;autoIncrement:false"`
+	UserID    uint
+	ExpiresAt time.Time
 }
 
-func (Session) TableName () string {
+func (Session) TableName() string {
 	return "sessions"
 }

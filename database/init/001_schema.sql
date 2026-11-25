@@ -193,14 +193,14 @@ UNLOCK TABLES;
 -- Final view structure for view `chat_view`
 --
 
-CREATE TABLE sessions (
-  id          CHAR(64) NOT NULL,
-  user_id     INT NOT NULL,
-  expires_at  DATETIME NOT NULL,
-  PRIMARY KEY (id),
-  KEY user_id (user_id),
-  CONSTRAINT sessions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `sessions` (
+  `id` bigint(20) unsigned NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `sessions_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /*!50001 DROP VIEW IF EXISTS `chat_view`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
