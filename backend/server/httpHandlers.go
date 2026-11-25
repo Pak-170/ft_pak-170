@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"go_pakito/Notification"
-	session "go_pakito/Session"
+	"go_pakito/Session"
 	"go_pakito/dbp"
 	"go_pakito/models"
 	"log"
@@ -40,7 +40,7 @@ func (h *Hub) getChats(c *gin.Context) {
 
 func (h *Hub) postChats(c *gin.Context) {
 
-	var chat CreateChatData
+	var chat models.CreateChatData
 
 	// We obtain info from the http petition
 	var err error = c.BindJSON(&chat)

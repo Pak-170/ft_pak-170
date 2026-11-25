@@ -11,14 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
-type CreateChatData struct {
-	InfoType	string	`json:"infoType"`
-	Name		string	`json:"name"`
-	ChatType	string	`json:"type"`
-	UserIDs		[]uint	`json:"userIDs"`
-}
-
 type Hub struct { // Es el único que puede gestionar y trabajar realmente con los elementos compartidos entre clientes
 	DB				*gorm.DB
 	sessions		map[string]session.Session

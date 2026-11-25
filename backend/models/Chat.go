@@ -4,8 +4,8 @@ import "encoding/json"
 
 type Chat struct {
 	ID				uint	`gorm:"primaryKey"`
-	Name			string	`gorm:"name"` //!Quizás haya problemas al guardar chats privados sin nombre pues ahora es NOT NULL
-	Owner			uint	`gorm:"owner" json:"-"` //! El JSON debería recibir también el owner del grupo supongo
+	Name			string	`gorm:"name"`
+	Owner			uint	`gorm:"owner" json:"-"`
 	Participants	[]User	`gorm:"-" json:"Participants"`
 }
 
