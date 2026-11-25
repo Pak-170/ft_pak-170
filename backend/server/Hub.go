@@ -21,8 +21,6 @@ type CreateChatData struct {
 
 type Hub struct { // Es el único que puede gestionar y trabajar realmente con los elementos compartidos entre clientes
 	DB				*gorm.DB
-	chats			map[uint]*models.Chat
-	//clients			map[uint]*Client
 	sessions		map[string]session.Session
 
 	join			chan *session.Session
@@ -34,8 +32,6 @@ type Hub struct { // Es el único que puede gestionar y trabajar realmente con l
 func newHub(db *gorm.DB) Hub {
 	return Hub{
 		DB:				db,
-		chats:			make(map[uint]*models.Chat),
-		//clients:		make(map[uint]*Client),
 		sessions:		make(map[string]session.Session),
 
 		join:			make(chan *session.Session),
@@ -59,12 +55,22 @@ func (h *Hub) Broadcast(ctx context.Context, msg *models.ChatView) error{
 	}
 }
 
-func (h *Hub) Join(s *session.Session) {
-	h.join <- s // qUIZÁS esto en un select
+func (h *Hub) Join(ctx context.Context, s *session.Session) error{
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case h.join <- s:
+		return nil
+	}
 }
 
-func (h *Hub) Leave(s *session.Session) {
-	h.leave <- s
+func (h *Hub) Leave(ctx context.Context, s *session.Session) error{
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case h.leave <- s:
+		return nil
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -88,27 +94,6 @@ func (h *Hub) broadcast(ctx context.Context, msg *models.ChatView) {
 	}
 }
 
-func (hub *Hub)initChats(ctx context.Context) error {
-
-	var chats map[uint]*models.Chat = make(map[uint]*models.Chat, 0)
-
-	chatsDB, err := dbp.SelectAny[models.Chat](ctx, hub.DB)
-
-	if err != nil {
-		return err
-	}
-	for _, chatDB := range chatsDB {
-		participants, err := dbp.SelectUsersOfChat(ctx, hub.DB, chatDB.ID)
-		if err != nil {
-			return err
-		}
-		chats[chatDB.ID] = &chatDB
-		chats[chatDB.ID].Participants = participants
-	}
-	hub.chats = chats
-	return err
-}
-
 
 func	(h *Hub) insertUsersInChat(ctx context.Context, chatID uint, users []uint) error {
 
@@ -120,28 +105,12 @@ func	(h *Hub) insertUsersInChat(ctx context.Context, chatID uint, users []uint) 
 			return err
 		}
 	}
-
-	participants, err := dbp.SelectUsersOfChat(ctx, h.DB, chatID)
-	if err != nil {
-		return err
-	}
-	h.chats[chatID].Participants = participants
-
 	return err
 }
 
 // ----------------------------------------------------------------------------
 
 func (h *Hub) run(ctx context.Context) {
-
-	if err := h.initChats(ctx); err != nil {
-		log.Printf("ERROR INITIALIZING CHATS: %v\n", err)
-		return
-	}
-	// if err := h.initClients(ctx); err != nil {
-	// 	log.Printf("ERROR INITIALIZING CLIENTS: %v\n", err)
-	// 	return
-	// }
 
 	for {
 		select {

@@ -13,8 +13,8 @@ import (
 
 type hub interface {
 	Broadcast(ctx context.Context, msg *models.ChatView) error
-	Join(s *Session)
-	Leave(s *Session)
+	Join(ctx context.Context, s *Session) error
+	Leave(ctx context.Context, s *Session) error
 }
 
 // mapa token-session <-> Session.
@@ -50,29 +50,16 @@ func (s *Session)CloseSession() {
 	s.ws.Close()
 }
 
-func isValidMsg(msg *models.ChatView, err error) (int, string){
-	if err != nil {
-		if websocket.IsCloseError(err, websocket.CloseGoingAway) {
-			return websocket.CloseNormalClosure, "Bye!"
-		} else {
-			return websocket.CloseInvalidFramePayloadData, err.Error()
-		}
-	}
-	if validation.V.Struct(msg) != nil {
-		return websocket.ClosePolicyViolation, "Invalid JSON"
-	}
-	return 0, ""
-}
 
 func (s *Session)ReadFromWS(ctx context.Context, h hub, db *gorm.DB) {
 
 	defer s.CloseSession()
-	defer h.Leave(s)
+	defer h.Leave(ctx, s)
 
 	for {
 		var msg models.ChatView
 		err := s.ws.ReadJSON(&msg)
-		errCode, errMsg := isValidMsg(&msg, err)
+		errCode, errMsg := validation.IsValidMsg(&msg, err)
 		if errCode != 0 {
 			log.Printf("Client %v (%v) disconnected with Code %v (%v)\n",
 				s.Info.Username, s.Info.ID, errCode, errMsg)
@@ -119,7 +106,6 @@ func (s *Session)WriteToWS(ctx context.Context) {
 				log.Println("User connection closed")
 				return
 			}
-			log.Println("Nuevo grupitooooo")
 			err := s.ws.WriteJSON(chatInfo)
 			if err != nil {
 				log.Printf("WS error chat: %v\n", err)

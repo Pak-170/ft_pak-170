@@ -96,10 +96,11 @@ func TestNewUser(t *testing.T) {
 		conn, resp, err := websocket.DefaultDialer.Dial(wsURL,
 			http.Header{"Cookie": []string{cookie.String()}})
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
-		defer conn.Close()
 		if err != nil {
 			log.Println("error")
+			return
 		}
+		defer conn.Close()
 		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		_, readmsg, err := conn.ReadMessage()
 		if err != nil {
@@ -112,10 +113,11 @@ func TestNewUser(t *testing.T) {
 		conn, resp, err := websocket.DefaultDialer.Dial(wsURL,
 			http.Header{"Cookie": []string{cookie.String()}})
 		assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode)
-		defer conn.Close()
 		if err != nil {
 			log.Println("error")
+			return
 		}
+		defer conn.Close()
 		msg := models.ChatView{
 			ChatID:		2,
 			Username:	NEWUSERNAME,
@@ -151,7 +153,7 @@ func TestNewUser(t *testing.T) {
 			Msg:		"hola",
 			SendTime:	time.Now(),
 		}
-		// Ahora puedes escribir y leer mensajes como si fuera un navegador
+
 		jsonmsg, _ := json.Marshal(msg)
 		err = conn.WriteMessage(websocket.TextMessage, jsonmsg)
 		if err == nil {

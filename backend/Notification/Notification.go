@@ -3,7 +3,6 @@ package Notification
 import (
 	"go_pakito/Session"
 	"go_pakito/models"
-	"log"
 )
 
 /*
@@ -12,7 +11,7 @@ import (
 */
 
 type notification interface{
-	Notify([]uint)
+	Notify(s *session.Session)
 }
 
 
@@ -23,9 +22,7 @@ type NewChat struct{
 func (n *NewChat)Notify(s *session.Session) {
 	select {
 	case s.SendChatInfo <- n.Chat:
-		log.Println("NOTIFY ENVIAMOS A UN CANAAAAAAAAAAAAAAAAAAAAAAAAAAAL")
 	default:
-		log.Println("NOTIFY default ;( why")
 		s.CloseSession()
 	}
 }
@@ -38,9 +35,7 @@ func (n *NewMsg)Notify(s *session.Session) {
 
 	select {
 	case s.SendMsg <- n.Msg:
-		log.Println("NOTIFY ENVIAMOS A UN CANAAAAAAAAAAAAAAAAAAAAAAAAAAAL")
 	default:
-		log.Println("NOTIFY default ;( why")
 		s.CloseSession()
 	}
 }

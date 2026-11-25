@@ -17,16 +17,46 @@ import (
 
 const DB_TIMEOUT = 5
 
+// GENERIC QUERIES ------------------------------------------------------------
+
+func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	tableRegisters, err := gorm.G[T](db).Find(ctxWithTimeout)
+
+	if err != nil {
+		return nil, err
+	}
+	return tableRegisters, err
+}
+
+func	SelectAnyWhere[T any, P any](ctx context.Context, db *gorm.DB, where string, argv P)  ([]T, error){
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
+	defer cancel()
+
+	tableRegisters, err := gorm.G[T](db).Where(where, argv).Find(ctxWithTimeout)
+	if err != nil {
+		return nil, err
+	}
+	return tableRegisters, err
+}
 
 // SELECT ---------------------------------------------------------------------
+
 
 func SelectUsersOfChat(ctx context.Context, db *gorm.DB, chatID uint) ([]models.User, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()
 	
-	usersInChat, err := gorm.G[models.User](db).
-		Raw("SELECT u.id, u.username, u.alias FROM users AS u JOIN chat_user as c ON c.user = u.id WHERE c.chat = ?", chatID).
-		Find(ctxWithTimeout)
+	var usersInChat []models.User
+
+	err := db.WithContext(ctxWithTimeout).
+		Table("users AS u").
+		Joins("JOIN chat_user as c ON c.user = u.id").
+		Where("c.chat = ?", chatID).
+		Find(&usersInChat).Error
+
 	return usersInChat, err
 }
 
@@ -69,17 +99,6 @@ func SelectAllChatsOfUser(ctx context.Context, db *gorm.DB, userID uint) ([]mode
 	return chats, chatsMsgs, err
 }
 
-func	SelectAny[T any](ctx context.Context, db *gorm.DB) ([]T, error) {
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
-	defer cancel()
-
-	tableRegisters, err := gorm.G[T](db).Find(ctxWithTimeout)
-
-	if err != nil {
-		return nil, err
-	}
-	return tableRegisters, err
-}
 
 func	SelectChatMsgs(ctx context.Context, db *gorm.DB, chatID uint) ([]models.ChatView, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
@@ -101,7 +120,6 @@ func	SelectUserFromToken(ctx context.Context, db *gorm.DB, token string) (models
 	return user, err
 }
 
-// SELECT sessions.* FROM sessions JOIN chat_user ON user = user_id;
 func	SelectSessionsFromChatID(ctx context.Context, db *gorm.DB, chatID uint) ([]models.Session, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, DB_TIMEOUT * time.Second)
 	defer cancel()

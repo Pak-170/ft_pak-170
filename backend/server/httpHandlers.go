@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"go_pakito/Session"
+	"go_pakito/Notification"
+	session "go_pakito/Session"
 	"go_pakito/dbp"
 	"go_pakito/models"
-	"go_pakito/Notification"
 	"log"
 	"net/http"
 
@@ -65,7 +65,6 @@ func (h *Hub) postChats(c *gin.Context) {
 		log.Printf("ERROR: Couldn't insert into DB -> %v\n", err)
 		return
 	}
-	h.chats[chatID] = models.NewChat(chatID, chat.Name, ownerID.(uint), nil)
 
 	// Insertion of the users
 	err = h.insertUsersInChat(c.Request.Context(), chatID, append(chat.UserIDs, ownerID.(uint)))
@@ -75,9 +74,14 @@ func (h *Hub) postChats(c *gin.Context) {
 		return
 	}
 
+	chatDB, err := dbp.SelectAnyWhere[models.Chat](c.Request.Context(), h.DB, "id = ?", chatID)
+	if err != nil || len(chatDB) != 1 {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "error interno de servidor"})
+		log.Printf("error finding chat in DB -> %v\n", err)
+		return
+	}
 
-
-	var newChat Notification.NewChat = Notification.NewChat{Chat: h.chats[chatID]}
+	var newChat Notification.NewChat = Notification.NewChat{Chat: &chatDB[0]}
 
 	sessions, err := dbp.SelectSessionsFromChatID(c.Request.Context(), h.DB, chatID)
 	if err != nil {
@@ -99,8 +103,7 @@ func (h *Hub) postChats(c *gin.Context) {
 		newChat.Notify(&sessionSession)
 	}
 
-	
-	c.JSON(http.StatusCreated, h.chats[chatID])
+	c.JSON(http.StatusCreated, chatDB[0])
 }
 
 // - WS Handler----------------------------------------------------------------
@@ -108,17 +111,13 @@ func (h *Hub) postChats(c *gin.Context) {
 func (h *Hub) sendPreviousMsgs(chatsInfo *[]models.Chat, priorMsgs *[]models.ChatView, s *session.Session) {
 
 	for _, chatInfo := range *chatsInfo {
-		log.Println(chatInfo)
-		s.SendChatInfo <- &chatInfo //
+		s.SendChatInfo <- &chatInfo
 	}
 
 	for _, msg := range *priorMsgs {
-		log.Println(msg)
 		s.SendMsg <- &msg
 	}
 }
-
-
 
 func (h *Hub) handleWS(c *gin.Context) {
 
@@ -150,7 +149,10 @@ func (h *Hub) handleWS(c *gin.Context) {
 		log.Printf("ERROR RETRIEVING OLS MSGS FOR USER %v\n", s.Info.ID)
 		return
 	}
-	h.Join(&s)
+	if err := h.Join(ctx, &s); err != nil {
+		log.Println(err)
+		return
+	}
 	go s.ReadFromWS(ctx, h, h.DB)
 	go s.WriteToWS(ctx)
 

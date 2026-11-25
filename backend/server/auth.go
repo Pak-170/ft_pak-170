@@ -13,7 +13,6 @@ import (
 	"gorm.io/gorm"
 
 	"go_pakito/models"
-	"log"
 )
 
 const (
@@ -62,7 +61,6 @@ func (h *Hub)Register(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		if l := len(cred.Username); l < 3 || l > 20 {
-			log.Printf("%v\n", c.Request)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "el usuario debe tener entre 3 y 20 caracteres"})
 			return
 		}
