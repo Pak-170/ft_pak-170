@@ -233,7 +233,6 @@ func run_game_inner(state *GameState, c chan StateMsg, mouse_pos chan MousePosMs
 	for {
 		select {
 		case <-tick:
-			fmt.Println("Tick")
 			state.next_mouse2 = state.Get_bounds_p(1).Clamp(Vec2{float32(state.ball.GetPosition().X), 0.0})
 			state.update()
 			select {
