@@ -101,7 +101,12 @@
   }
 </script>
 
-<div class="monitor-frame" class:vertical class:transitioning>
+<div
+  class="monitor-frame"
+  class:vertical
+  class:transitioning
+  class:fullscreen={isFullscreen}
+>
   <img class="layer border-layer" src="/border.png" alt="" />
 
   <div class="keys-layer">
@@ -144,31 +149,41 @@
 
 <style>
   .monitor-frame {
-    position: fixed;
+    position: absolute;
     top: 50%;
     left: 50%;
-    width: min(100vw, calc(100dvh * 16 / 9));
-    aspect-ratio: 16 / 9;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
     display: grid;
     place-items: center;
-    transform: translate(-50%, -50%) rotate(0deg);
+    transform: translate(-50%, -50%);
     transform-origin: center;
     z-index: 10000;
     pointer-events: none;
     overflow: visible;
-    transition: none;
   }
 
   .monitor-frame.transitioning {
     transition:
       width 3s cubic-bezier(0.65, 0, 0.35, 1),
-      transform 3s cubic-bezier(0.65, 0, 0.35, 1);
+      transform 3s cubic-bezier(0.65, 0, 0.35, 1),
+      left 3s cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   .monitor-frame.vertical {
-    width: 100dvh;
-    left: 50%;
-    transform: translate(calc(-50% + 50vw - 28.125dvh), -50%) rotate(90deg);
+    width: var(--unit);
+    height: auto;
+    aspect-ratio: 16 / 9;
+    left: 82%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+
+  .monitor-frame.vertical.fullscreen {
+    left: calc(100% - (var(--unit) * 0.28125));
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
   }
 
   .layer {

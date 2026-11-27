@@ -5,11 +5,14 @@
     currentUser,
     users,
     chats,
+    selectedChatID,
+    unreadMessages,
     connectWebSocket,
     sendMessage,
     fetchUsers,
     fetchChats,
     createChat as createChatRequest,
+    markChatAsRead,
   } from '../client';
 
   type ChatUser = {
@@ -19,7 +22,6 @@
   };
 
   let message = $state('');
-  let selectedChatID = $state<number | null>(null);
   let messagesContainer = $state<HTMLDivElement>();
 
   let showNewChat = $state(false);
@@ -36,7 +38,7 @@
 
   const selectedMessages = $derived(
     $messages
-      .filter((msg) => msg.ChatID === selectedChatID)
+      .filter((msg) => msg.ChatID === $selectedChatID)
       .sort(
         (a, b) =>
           new Date(a.SendTime).getTime() - new Date(b.SendTime).getTime(),
@@ -54,7 +56,7 @@
   );
 
   const selectedChat = $derived(
-    $chats.find((chat) => chat.ID === selectedChatID),
+    $chats.find((chat) => chat.ID === $selectedChatID),
   );
 
   const otherParticipant = $derived(
@@ -64,14 +66,16 @@
   const selectedChatName = $derived(
     selectedChat?.Type === 'individual'
       ? otherParticipant?.alias || otherParticipant?.username || 'Private Chat'
-      : selectedChat?.Name || `Chat ${selectedChatID}`,
+      : selectedChat?.Name || `Chat ${$selectedChatID}`,
   );
 
   onMount(async () => {
-    await connectWebSocket();
-
     try {
+      await connectWebSocket();
       await Promise.all([fetchUsers(), fetchChats()]);
+      if ($selectedChatID !== null) {
+        markChatAsRead($selectedChatID);
+      }
     } catch (error) {
       console.error('[Chat] Could not load initial data:', error);
       errorMessage = 'Could not load users or chats.';
@@ -79,8 +83,8 @@
   });
 
   $effect(() => {
-    if (selectedChatID === null && chatIDs.length > 0) {
-      selectedChatID = chatIDs[0];
+    if ($selectedChatID === null && chatIDs.length > 0) {
+      selectChat(chatIDs[0]);
     }
   });
 
@@ -91,16 +95,20 @@
   });
 
   async function submit() {
-    if (!message.trim() || selectedChatID === null || !username) {
+    if (!message.trim() || $selectedChatID === null || !username) {
       return;
     }
 
-    sendMessage(selectedChatID, username, message.trim());
-    message = '';
+    const sent = sendMessage($selectedChatID, username, message.trim());
+
+    if (sent) {
+      message = '';
+    }
   }
 
   async function selectChat(chatID: number) {
-    selectedChatID = chatID;
+    selectedChatID.set(chatID);
+    markChatAsRead(chatID);
     await scrollDown();
   }
 
@@ -149,16 +157,13 @@
         ...(chatType === 'group' ? { name: groupName.trim() } : {}),
       });
 
-      selectedChatID = chat.ID;
       showNewChat = false;
       selectedUsers = [];
       groupName = '';
       search = '';
 
       await fetchChats();
-      selectedChatID = chat.ID;
-
-      await scrollDown();
+      await selectChat(chat.ID);
     } catch (error) {
       console.error('[Chat] Could not create chat:', error);
       errorMessage = 'Could not create chat. Please try again.';
@@ -195,24 +200,26 @@
 
       {#each $chats as chat (chat.ID)}
         <button
-          class:active={selectedChatID === chat.ID}
+          class:active={$selectedChatID === chat.ID}
           onclick={() => selectChat(chat.ID)}
         >
           {#if chat.Type === 'individual'}
             {chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
-              ?.alias ||
-              chat.Participants?.find((user) => user.ID !== $currentUser?.ID)
-                ?.username ||
-              'Private Chat'}
+              ?.username || 'Private Chat'}
           {:else}
             {chat.Name || `Chat ${chat.ID}`}
+          {/if}
+          {#if $unreadMessages[chat.ID]}
+            <span class="unread-count">
+              {$unreadMessages[chat.ID]}
+            </span>
           {/if}
         </button>
       {/each}
     </aside>
 
     <div class="chat">
-      {#if selectedChatID !== null}
+      {#if $selectedChatID !== null}
         <div class="header">
           <h1>{selectedChatName}</h1>
         </div>
@@ -409,6 +416,18 @@
     padding: 2cqh 2cqw;
     text-align: left;
     font-size: clamp(10px, 2.5cqw, 18px);
+    background: var(--surface-light);
+    color: var(--green-bright);
+  }
+
+  .unread-count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border: 1px solid var(--green-bright);
+    border-radius: 10px;
+    color: var(--green-bright);
+    font-size: 0.85em;
   }
 
   .chat {

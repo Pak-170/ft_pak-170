@@ -1,11 +1,12 @@
 <script lang="ts">
   import Chat from './Chat.svelte';
+  import Game from './Game.svelte';
 </script>
 
 <div class="game-chat-layout">
   <!-- Area del Juego-->
   <main class="game-area">
-    <img src="/GamePreview.gif" alt="Game background" />
+    <Game />
   </main>
   <!-- Area del Juego-->
   <aside class="crt-panel">
@@ -21,35 +22,28 @@
   .game-chat-layout {
     position: absolute;
     inset: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30.24%;
+    gap: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
   }
 
   .game-area {
-    position: absolute;
-    right: 0;
-    inset: 0 30% 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    overflow: hidden;
-  }
-
-  .game-area img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    object-position: left center;
-    display: block;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .crt-panel {
-    position: absolute;
-    top: 5dvh;
-    right: 0;
-    width: 56dvh;
-    height: 82dvh;
+    position: relative;
+    top: 5%;
+    width: 100%;
+    height: 80%;
+    min-width: 0;
     overflow: hidden;
-    z-index: 2;
   }
 
   .crt-container {
@@ -62,6 +56,9 @@
   .chat-screen {
     position: absolute;
     inset: 0;
-    z-index: 1;
+  }
+
+  :global(:root:not(:fullscreen)) .game-chat-layout {
+    grid-template-columns: minmax(0, 1fr) 36%;
   }
 </style>
