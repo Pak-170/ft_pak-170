@@ -37,6 +37,7 @@ services:
     build:
       context: ./database
       dockerfile: Dockerfile
+    command: ["--event-scheduler=ON"]
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${DB_NAME}

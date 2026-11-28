@@ -202,6 +202,11 @@ CREATE TABLE `sessions` (
   CONSTRAINT `sessions_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE EVENT IF NOT EXISTS purge_expired_sessions
+ON SCHEDULE EVERY 1 HOUR
+DO
+  DELETE FROM sessions WHERE expires_at < NOW();
+
 /*!50001 DROP VIEW IF EXISTS `chat_view`*/;
 /*!50001 SET @saved_cs_client          = @@character_set_client */;
 /*!50001 SET @saved_cs_results         = @@character_set_results */;
